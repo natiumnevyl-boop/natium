@@ -1,14 +1,99 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '@/lib/errors'
 
+const getUser = vi.fn()
+const getSession = vi.fn()
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    auth: { getSession: vi.fn() },
+    auth: {
+      getUser: (...args: unknown[]) => getUser(...args),
+      getSession: (...args: unknown[]) => getSession(...args),
+    },
     rpc: vi.fn(),
   },
 }))
 
-import { invokeAdminHealth } from './api'
+import {
+  buildAuditListArgs,
+  compactRpcArgs,
+  invokeAdminHealth,
+  resolveUserAccessToken,
+} from './api'
+
+describe('compactRpcArgs', () => {
+  it('omits null, undefined and empty strings', () => {
+    expect(
+      compactRpcArgs({
+        p_search: null,
+        p_actor_id: '',
+        p_action: undefined,
+        p_limit: 15,
+        p_offset: 0,
+        p_category: 'admin',
+      }),
+    ).toEqual({ p_limit: 15, p_offset: 0, p_category: 'admin' })
+  })
+})
+
+describe('buildAuditListArgs', () => {
+  it('sends only limit/offset for the default unfiltered page', () => {
+    expect(
+      buildAuditListArgs({
+        search: '',
+        from: '',
+        to: '',
+        actorId: '',
+        action: '',
+        entity: '',
+        result: '',
+        category: 'all',
+        page: 1,
+        pageSize: 15,
+      }),
+    ).toEqual({ p_limit: 15, p_offset: 0 })
+  })
+
+  it('includes actor id as text when provided', () => {
+    const args = buildAuditListArgs({
+      search: '',
+      from: '',
+      to: '',
+      actorId: '11111111-1111-1111-1111-111111111111',
+      action: '',
+      entity: '',
+      result: '',
+      category: 'all',
+      page: 2,
+      pageSize: 25,
+    })
+    expect(args).toEqual({
+      p_actor_id: '11111111-1111-1111-1111-111111111111',
+      p_limit: 25,
+      p_offset: 25,
+    })
+  })
+})
+
+describe('resolveUserAccessToken', () => {
+  afterEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('refreshes via getUser then returns session access_token', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null })
+    getSession.mockResolvedValue({
+      data: { session: { access_token: 'user-jwt' } },
+      error: null,
+    })
+    await expect(resolveUserAccessToken()).resolves.toBe('user-jwt')
+  })
+
+  it('rejects when there is no authenticated user', async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: { message: 'invalid' } })
+    await expect(resolveUserAccessToken()).rejects.toBeInstanceOf(AppError)
+  })
+})
 
 describe('invokeAdminHealth', () => {
   const originalFetch = globalThis.fetch
@@ -18,7 +103,7 @@ describe('invokeAdminHealth', () => {
     vi.restoreAllMocks()
   })
 
-  it('returns services on HTTP 200', async () => {
+  it('returns services on HTTP 200 with user Bearer token (not anon)', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -45,10 +130,15 @@ describe('invokeAdminHealth', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/functions/v1/admin-health'),
       expect.objectContaining({
-        method: 'GET',
+        method: 'POST',
         headers: expect.objectContaining({ Authorization: 'Bearer user-jwt' }),
       }),
     )
+    const call = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+    const headers = (call?.[1] as { headers: Record<string, string> } | undefined)?.headers
+    expect(headers?.Authorization).toBe('Bearer user-jwt')
+    expect(headers?.apikey).toBeTruthy()
+    expect(headers?.Authorization).not.toBe(`Bearer ${headers?.apikey}`)
   })
 
   it('maps 401 to AppError', async () => {
@@ -85,7 +175,9 @@ describe('invokeAdminHealth', () => {
   })
 
   it('maps timeout/abort', async () => {
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('The operation was aborted')) as unknown as typeof fetch
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new Error('The operation was aborted')) as unknown as typeof fetch
     await expect(invokeAdminHealth('user')).rejects.toThrow(/Tiempo de espera/)
   })
 

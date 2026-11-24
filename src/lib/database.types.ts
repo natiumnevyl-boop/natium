@@ -1380,6 +1380,7 @@ export type Database = {
           p_search?: string | null
           p_from?: string | null
           p_to?: string | null
+          /** text (not uuid) so PostgREST can resolve optional null/omitted args */
           p_actor_id?: string | null
           p_action?: string | null
           p_entity?: string | null

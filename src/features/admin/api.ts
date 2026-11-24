@@ -238,6 +238,17 @@ export function useAdminExportMetrics(enabled = true) {
   })
 }
 
+/** Drop null/empty optional RPC args so PostgREST can resolve the function signature. */
+export function compactRpcArgs<T extends Record<string, unknown>>(args: T): Partial<T> {
+  const out: Partial<T> = {}
+  for (const [key, value] of Object.entries(args)) {
+    if (value === null || value === undefined) continue
+    if (typeof value === 'string' && value.trim() === '') continue
+    out[key as keyof T] = value as T[keyof T]
+  }
+  return out
+}
+
 async function fetchWithTimeout(
   url: string,
   init: RequestInit,
@@ -252,18 +263,35 @@ async function fetchWithTimeout(
   }
 }
 
-export async function invokeAdminHealth(accessToken: string): Promise<AdminHealthResponse> {
+/** Resolve a fresh user access token from the shared Supabase client (never the anon key). */
+export async function resolveUserAccessToken(): Promise<string> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData.user) {
+    throw new AppError('Tu sesión expiró. Vuelve a iniciar sesión.', 'session_expired')
+  }
+  const { data: sessionData } = await supabase.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) {
+    throw new AppError('Tu sesión expiró. Vuelve a iniciar sesión.', 'session_expired')
+  }
+  return accessToken
+}
+
+export async function invokeAdminHealth(accessToken?: string): Promise<AdminHealthResponse> {
+  const token = accessToken ?? (await resolveUserAccessToken())
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-health`
   let res: Response
   try {
     res = await fetchWithTimeout(
       url,
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+          'Content-Type': 'application/json',
         },
+        body: '{}',
       },
       25_000,
     )
@@ -273,6 +301,7 @@ export async function invokeAdminHealth(accessToken: string): Promise<AdminHealt
       aborted
         ? 'Tiempo de espera agotado al verificar infraestructura.'
         : 'No se pudo conectar con el monitor de infraestructura.',
+      aborted ? 'timeout' : 'network',
     )
   }
 
@@ -281,7 +310,10 @@ export async function invokeAdminHealth(accessToken: string): Promise<AdminHealt
     detail?: string
   }
   if (!res.ok) {
-    throw new AppError(body.error || `Error HTTP ${res.status} del monitor`)
+    throw new AppError(body.error || `Error HTTP ${res.status} del monitor`, `http_${res.status}`, {
+      detail: body.detail,
+      status: res.status,
+    })
   }
   return body
 }
@@ -293,12 +325,33 @@ export function useAdminInfrastructure(enabled = true) {
     refetchInterval: 120_000,
     staleTime: 30_000,
     retry: 1,
-    queryFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData.session?.access_token
-      if (!accessToken) throw new AppError('Tu sesión expiró. Vuelve a iniciar sesión.')
-      return invokeAdminHealth(accessToken)
-    },
+    queryFn: async () => invokeAdminHealth(),
+  })
+}
+
+export function buildAuditListArgs(opts: {
+  search: string
+  from: string
+  to: string
+  actorId: string
+  action: string
+  entity: string
+  result: string
+  category: AuditCategory
+  page: number
+  pageSize: number
+}) {
+  return compactRpcArgs({
+    p_search: opts.search.trim() || null,
+    p_from: opts.from ? new Date(`${opts.from}T00:00:00`).toISOString() : null,
+    p_to: opts.to ? new Date(`${opts.to}T23:59:59`).toISOString() : null,
+    p_actor_id: opts.actorId || null,
+    p_action: opts.action || null,
+    p_entity: opts.entity || null,
+    p_result: opts.result || null,
+    p_category: opts.category === 'all' ? null : opts.category,
+    p_limit: opts.pageSize,
+    p_offset: (opts.page - 1) * opts.pageSize,
   })
 }
 
@@ -320,18 +373,21 @@ export function useAuditLogs(opts: {
     enabled: opts.enabled !== false,
     queryFn: async () => {
       const data = unwrap(
-        await supabase.rpc('admin_list_audit_logs', {
-          p_search: opts.search.trim() || null,
-          p_from: opts.from ? new Date(`${opts.from}T00:00:00`).toISOString() : null,
-          p_to: opts.to ? new Date(`${opts.to}T23:59:59`).toISOString() : null,
-          p_actor_id: opts.actorId || null,
-          p_action: opts.action || null,
-          p_entity: opts.entity || null,
-          p_result: opts.result || null,
-          p_category: opts.category === 'all' ? null : opts.category,
-          p_limit: opts.pageSize,
-          p_offset: (opts.page - 1) * opts.pageSize,
-        }),
+        await supabase.rpc(
+          'admin_list_audit_logs',
+          buildAuditListArgs(opts) as {
+            p_search?: string
+            p_from?: string
+            p_to?: string
+            p_actor_id?: string
+            p_action?: string
+            p_entity?: string
+            p_result?: string
+            p_category?: string
+            p_limit?: number
+            p_offset?: number
+          },
+        ),
       ) as unknown as { total: number; rows: AdminAuditRow[]; limit: number; offset: number }
       return data
     },
@@ -349,11 +405,18 @@ export function useAuditStats(opts: {
     enabled: opts.enabled !== false,
     queryFn: async () =>
       unwrap(
-        await supabase.rpc('admin_audit_stats', {
-          p_from: opts.from ? new Date(`${opts.from}T00:00:00`).toISOString() : null,
-          p_to: opts.to ? new Date(`${opts.to}T23:59:59`).toISOString() : null,
-          p_category: opts.category === 'all' ? null : opts.category,
-        }),
+        await supabase.rpc(
+          'admin_audit_stats',
+          compactRpcArgs({
+            p_from: opts.from ? new Date(`${opts.from}T00:00:00`).toISOString() : null,
+            p_to: opts.to ? new Date(`${opts.to}T23:59:59`).toISOString() : null,
+            p_category: opts.category === 'all' ? null : opts.category,
+          }) as {
+            p_from?: string
+            p_to?: string
+            p_category?: string
+          },
+        ),
       ) as unknown as AdminAuditStats,
   })
 }

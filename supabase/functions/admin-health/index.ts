@@ -95,12 +95,6 @@ async function probeUrl(
   }
 }
 
-function extractJwt(authHeader: string | null): string | null {
-  if (!authHeader) return null
-  const m = authHeader.match(/^Bearer\s+(.+)$/i)
-  return m?.[1]?.trim() || null
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -109,9 +103,12 @@ Deno.serve(async (req) => {
 
   const checked_at = new Date().toISOString()
   try {
+    // Same auth pattern as generate-mdb: forward the caller's Authorization header
+    // and let auth.getUser() resolve the user from that session context.
     const authHeader = req.headers.get('Authorization')
-    const jwt = extractJwt(authHeader)
-    if (!jwt) return json({ error: 'No autenticado' }, 401)
+    if (!authHeader || !/^Bearer\s+\S+/i.test(authHeader)) {
+      return json({ error: 'No autenticado', detail: 'missing_authorization' }, 401)
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -120,12 +117,11 @@ Deno.serve(async (req) => {
     }
 
     const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${jwt}` } },
+      global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false, autoRefreshToken: false },
     })
 
-    // Explicit JWT avoids edge-runtime getUser() session ambiguity.
-    const { data: userData, error: userError } = await userClient.auth.getUser(jwt)
+    const { data: userData, error: userError } = await userClient.auth.getUser()
     if (userError || !userData.user) {
       return json(
         {

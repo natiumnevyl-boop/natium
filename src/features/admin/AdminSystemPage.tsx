@@ -59,7 +59,8 @@ function resolveProbe(
   label: string,
   services: HealthProbe[] | undefined,
   loading: boolean,
-  failed: boolean,
+  monitorAuthFailed: boolean,
+  monitorFailed: boolean,
 ): HealthProbe {
   const found = services?.find((s) => s.id === id)
   if (found) return { ...found, label: found.label || label }
@@ -71,11 +72,23 @@ function resolveProbe(
       ok: false,
       http_status: null,
       ms: 0,
-      checked_at: new Date().toISOString(),
+      checked_at: '',
       detail: 'Comprobación en curso',
     }
   }
-  if (failed) {
+  if (monitorAuthFailed) {
+    return {
+      id,
+      label,
+      state: 'unchecked',
+      ok: false,
+      http_status: null,
+      ms: 0,
+      checked_at: '',
+      detail: 'No verificado: el monitor no autenticó la sesión',
+    }
+  }
+  if (monitorFailed) {
     return {
       id,
       label,
@@ -83,7 +96,7 @@ function resolveProbe(
       ok: false,
       http_status: null,
       ms: 0,
-      checked_at: new Date().toISOString(),
+      checked_at: '',
       detail: 'No se pudo completar la verificación',
     }
   }
@@ -94,12 +107,17 @@ function resolveProbe(
     ok: false,
     http_status: null,
     ms: 0,
-    checked_at: new Date().toISOString(),
+    checked_at: '',
     detail: 'Sin verificar',
   }
 }
 
 function ServiceRow({ probe }: { probe: HealthProbe }) {
+  const showMetrics =
+    probe.state !== 'checking' &&
+    probe.state !== 'unchecked' &&
+    (probe.http_status != null || probe.ms > 0 || Boolean(probe.checked_at))
+
   return (
     <li className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
       <div className="min-w-0">
@@ -109,14 +127,15 @@ function ServiceRow({ probe }: { probe: HealthProbe }) {
             <span className="inline-flex items-center gap-1">
               <Loader2 className="size-3 animate-spin" /> Verificando…
             </span>
-          ) : (
+          ) : showMetrics ? (
             <>
               {probe.http_status != null ? `HTTP ${probe.http_status}` : 'Sin respuesta'}
               {' · '}
               {probe.ms} ms
-              {' · '}
-              {fmtDateTime(probe.checked_at)}
+              {probe.checked_at ? ` · ${fmtDateTime(probe.checked_at)}` : null}
             </>
+          ) : (
+            'Sin verificar'
           )}
         </p>
         {probe.state !== 'checking' && (
@@ -147,6 +166,12 @@ export function AdminSystemPage() {
     void metrics.refetch()
     void infra.refetch()
   }
+
+  const infraAuthFailed =
+    infra.isError &&
+    /no autenticado|sesión expiró|session_expired|http_401/i.test(
+      `${toAppError(infra.error).message} ${toAppError(infra.error).code}`,
+    )
 
   return (
     <>
@@ -238,7 +263,8 @@ export function AdminSystemPage() {
                   s.label,
                   services,
                   infra.isLoading || infra.isFetching,
-                  infra.isError,
+                  infraAuthFailed,
+                  infra.isError && !infraAuthFailed,
                 )}
               />
             ))}
