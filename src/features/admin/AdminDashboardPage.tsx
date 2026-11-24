@@ -1,124 +1,244 @@
-import { AlertTriangle, ClipboardList, Flag, Shield, Trophy, UserRound, Users } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Card, CardHeader, PageHeader, StatCard } from '@/shared/ui'
+import {
+  AlertTriangle,
+  ClipboardList,
+  FileOutput,
+  Flag,
+  Shield,
+  Trophy,
+  UserRound,
+  Users,
+} from 'lucide-react'
+import { Badge, Card, CardBody, CardHeader, Field, Input, PageHeader, StatCard } from '@/shared/ui'
 import { ErrorState } from '@/shared/ui/StatusPages'
 import { fmtDateTime } from '@/shared/utils/dates'
-import { useAdminCounts, useRecentExportJobs } from './api'
+import { useAdminDashboardStats } from './api'
+
+function daysAgoIso(days: number) {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - days)
+  return d.toISOString()
+}
+
+function MiniBars({
+  series,
+  field,
+}: {
+  series: { day: string; users: number; registrations: number; exports: number }[]
+  field: 'users' | 'registrations' | 'exports'
+}) {
+  const max = Math.max(1, ...series.map((s) => s[field]))
+  return (
+    <div className="flex h-24 items-end gap-0.5">
+      {series.map((s) => {
+        const h = Math.round((s[field] / max) * 100)
+        return (
+          <div
+            key={s.day}
+            title={`${s.day}: ${s[field]}`}
+            className="min-w-0 flex-1 rounded-t bg-aqua/80 transition-all hover:bg-aqua"
+            style={{ height: `${Math.max(h, s[field] > 0 ? 8 : 2)}%` }}
+          />
+        )
+      })}
+    </div>
+  )
+}
 
 export function AdminDashboardPage() {
-  const counts = useAdminCounts()
-  const exports = useRecentExportJobs()
-  const d = counts.data
+  const [from, setFrom] = useState(() => daysAgoIso(29).slice(0, 10))
+  const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10))
+  const fromIso = useMemo(() => new Date(`${from}T00:00:00`).toISOString(), [from])
+  const toIso = useMemo(() => new Date(`${to}T23:59:59`).toISOString(), [to])
+  const stats = useAdminDashboardStats(fromIso, toIso)
+  const d = stats.data?.totals
+  const series = stats.data?.series ?? []
+  const hasSeriesSignal = series.some((s) => s.users + s.registrations + s.exports > 0)
+
   return (
     <>
       <PageHeader
         title="Administración de la plataforma"
-        description="Supervisión global de organizaciones, usuarios y actividad."
+        description="Supervisión global independiente de organizaciones y equipos."
+        actions={
+          <div className="flex flex-wrap items-end gap-2">
+            <Field label="Desde" className="w-[9.5rem]">
+              {(p) => (
+                <Input {...p} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Hasta" className="w-[9.5rem]">
+              {(p) => (
+                <Input {...p} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              )}
+            </Field>
+          </div>
+        }
       />
-      {counts.isError && (
+      {stats.isError && (
         <div className="mb-5">
           <ErrorState
-            message="No se pudieron cargar los conteos."
-            onRetry={() => counts.refetch()}
+            message="No se pudieron cargar los indicadores."
+            onRetry={() => stats.refetch()}
           />
         </div>
       )}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Usuarios"
-          value={d?.profiles}
+          value={d?.users}
           icon={<Shield className="size-5" />}
           to="/admin/users"
-          loading={counts.isLoading}
+          loading={stats.isLoading}
+        />
+        <StatCard
+          label="Usuarios nuevos"
+          value={d?.users_new}
+          icon={<UserRound className="size-5" />}
+          tone="aqua"
+          loading={stats.isLoading}
         />
         <StatCard
           label="Entrenadores"
           value={d?.coaches}
           icon={<UserRound className="size-5" />}
           to="/admin/users"
-          loading={counts.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           label="Organizadores"
           value={d?.organizers}
           icon={<Flag className="size-5" />}
-          loading={counts.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           label="Organizaciones"
           value={d?.organizations}
           icon={<Flag className="size-5" />}
-          loading={counts.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           label="Equipos"
           value={d?.teams}
           icon={<Users className="size-5" />}
-          loading={counts.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           label="Atletas"
           value={d?.athletes}
           icon={<UserRound className="size-5" />}
-          loading={counts.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           label="Competencias"
           value={d?.competitions}
           icon={<Trophy className="size-5" />}
-          loading={counts.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           label="Inscripciones"
           value={d?.registrations}
           icon={<ClipboardList className="size-5" />}
-          loading={counts.isLoading}
+          loading={stats.isLoading}
+        />
+        <StatCard
+          label="Exportaciones MDB"
+          value={d?.exports_mdb}
+          icon={<FileOutput className="size-5" />}
+          loading={stats.isLoading}
+        />
+        <StatCard
+          label="Exportaciones CSV"
+          value={d?.exports_csv}
+          icon={<FileOutput className="size-5" />}
+          loading={stats.isLoading}
         />
         <StatCard
           label="Exportaciones fallidas"
-          value={d?.failed_exports}
+          value={d?.exports_failed}
           icon={<AlertTriangle className="size-5" />}
           tone="warning"
-          loading={counts.isLoading}
+          to="/admin/system"
+          loading={stats.isLoading}
         />
       </div>
-      <Card className="mt-6">
-        <CardHeader
-          title="Actividad de exportación"
-          description="Últimos trabajos MDB/CSV en la plataforma."
-          action={
-            <Link to="/admin/audit" className="text-xs font-semibold text-ocean hover:underline">
-              Auditoría
-            </Link>
-          }
-        />
-        <ul className="divide-y divide-ice-200">
-          {exports.data?.map((j) => (
-            <li key={j.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-navy">
-                  {j.file_name ?? j.format} ·{' '}
-                  {(j.competition as { name?: string } | null)?.name ??
-                    j.competition_id.slice(0, 8)}
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <Card>
+          <CardHeader
+            title="Crecimiento"
+            description={
+              hasSeriesSignal
+                ? 'Altas de usuarios, envíos de inscripción y exportaciones por día.'
+                : 'Aún no hay suficiente actividad en el periodo para graficar.'
+            }
+          />
+          <CardBody className="space-y-4">
+            {hasSeriesSignal ? (
+              <>
+                <div>
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-steel-600 uppercase">
+                    Usuarios
+                  </p>
+                  <MiniBars series={series} field="users" />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-steel-600 uppercase">
+                    Inscripciones
+                  </p>
+                  <MiniBars series={series} field="registrations" />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-steel-600 uppercase">
+                    Exportaciones
+                  </p>
+                  <MiniBars series={series} field="exports" />
+                </div>
+              </>
+            ) : (
+              <p className="py-8 text-center text-sm text-steel-600">
+                Los gráficos aparecerán cuando exista actividad registrada en el rango.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Actividad reciente"
+            description="Auditoría real; no se inventa historial."
+            action={
+              <Link to="/admin/audit" className="text-xs font-semibold text-ocean hover:underline">
+                Ver todo
+              </Link>
+            }
+          />
+          <ul className="divide-y divide-ice-200">
+            {stats.data?.recent_audit.map((a) => (
+              <li key={a.id} className="px-5 py-3 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge tone="info">{a.action}</Badge>
+                  <span className="tnum text-xs text-steel-600">{fmtDateTime(a.created_at)}</span>
+                </div>
+                <p className="mt-1 truncate font-semibold text-navy">
+                  {a.entity}
+                  {a.entity_id ? ` · ${a.entity_id.slice(0, 8)}` : ''}
                 </p>
-                <p className="text-xs text-steel-600">{fmtDateTime(j.created_at)}</p>
-              </div>
-              <Badge
-                tone={
-                  j.status === 'completed' ? 'success' : j.status === 'failed' ? 'danger' : 'warning'
-                }
-              >
-                {j.status}
-              </Badge>
-            </li>
-          ))}
-          {exports.data?.length === 0 && (
-            <li className="px-5 py-8 text-center text-sm text-steel-600">
-              Sin trabajos de exportación recientes.
-            </li>
-          )}
-        </ul>
-      </Card>
+                <p className="truncate text-xs text-steel-600">
+                  {a.actor_name || a.actor_email || 'sistema'}
+                </p>
+              </li>
+            ))}
+            {stats.data?.recent_audit.length === 0 && (
+              <li className="px-5 py-8 text-center text-sm text-steel-600">
+                Sin eventos de auditoría todavía.
+              </li>
+            )}
+          </ul>
+        </Card>
+      </div>
     </>
   )
 }

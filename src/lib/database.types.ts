@@ -814,6 +814,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: Database['public']['Enums']['account_status']
           avatar_path: string | null
           created_at: string
           email: string
@@ -825,6 +826,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          account_status?: Database['public']['Enums']['account_status']
           avatar_path?: string | null
           created_at?: string
           email: string
@@ -835,6 +837,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_status?: Database['public']['Enums']['account_status']
           avatar_path?: string | null
           created_at?: string
           email?: string
@@ -1320,6 +1323,37 @@ export type Database = {
         Args: { p_competition_id: string }
         Returns: Json
       }
+      admin_dashboard_stats: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: Json
+      }
+      admin_list_users: {
+        Args: {
+          p_search?: string | null
+          p_role?: Database['public']['Enums']['app_role'] | null
+          p_status?: Database['public']['Enums']['account_status'] | null
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: Json
+      }
+      admin_user_detail: { Args: { p_user_id: string }; Returns: Json }
+      admin_system_status: { Args: Record<PropertyKey, never>; Returns: Json }
+      admin_set_profile_role: {
+        Args: {
+          p_user_id: string
+          p_role: Database['public']['Enums']['app_role']
+        }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
+      admin_set_account_status: {
+        Args: {
+          p_user_id: string
+          p_status: Database['public']['Enums']['account_status']
+          p_reason?: string | null
+        }
+        Returns: Database['public']['Tables']['profiles']['Row']
+      }
       get_competition_export_snapshot: {
         Args: { p_competition_id: string; p_team_id?: string | null }
         Returns: Json
@@ -1478,6 +1512,7 @@ export type Database = {
       validate_registration: { Args: { p_registration_id: string }; Returns: Json }
     }
     Enums: {
+      account_status: 'active' | 'suspended'
       app_role: 'platform_admin' | 'organizer' | 'coach'
       athlete_sex: 'F' | 'M'
       competition_status: 'draft' | 'published' | 'closed' | 'finished'
@@ -1612,6 +1647,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      account_status: ['active', 'suspended'],
       app_role: ['platform_admin', 'organizer', 'coach'],
       athlete_sex: ['F', 'M'],
       competition_status: ['draft', 'published', 'closed', 'finished'],

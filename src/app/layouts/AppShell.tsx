@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
+  Activity,
   BookOpen,
   ClipboardList,
   Flag,
@@ -51,6 +52,7 @@ const navByRole: Record<Enums<'app_role'>, NavItem[]> = {
     { to: '/admin', label: 'Panel', icon: <LayoutDashboard className="size-4" />, end: true },
     { to: '/admin/users', label: 'Usuarios', icon: <Shield className="size-4" /> },
     { to: '/admin/audit', label: 'Auditoría', icon: <ScrollText className="size-4" /> },
+    { to: '/admin/system', label: 'Sistema', icon: <Activity className="size-4" /> },
     { to: '/org/catalog', label: 'Catálogo de pruebas', icon: <BookOpen className="size-4" /> },
   ],
 }

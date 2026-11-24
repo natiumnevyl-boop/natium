@@ -1,17 +1,34 @@
 import { useState } from 'react'
 import { Badge, DataTable, PageHeader, Pagination, Select, type Column } from '@/shared/ui'
+import { ErrorState } from '@/shared/ui/StatusPages'
+import { toAppError } from '@/lib/errors'
 import { fmtDateTime } from '@/shared/utils/dates'
 import { useAuditLogs } from './api'
 
 type Row = NonNullable<ReturnType<typeof useAuditLogs>['data']>['rows'][number]
+
 const ENTITIES = [
+  'profiles',
   'teams',
   'athletes',
+  'organizations',
   'competitions',
   'registrations',
-  'team_members',
   'export_jobs',
+  'team_members',
 ]
+
+function metaResult(meta: unknown) {
+  if (!meta || typeof meta !== 'object') return '—'
+  const m = meta as Record<string, unknown>
+  return typeof m.result === 'string' ? m.result : 'ok'
+}
+
+function metaModule(meta: unknown, entity: string) {
+  if (!meta || typeof meta !== 'object') return entity
+  const m = meta as Record<string, unknown>
+  return typeof m.module === 'string' ? m.module : entity
+}
 
 export function AdminAuditPage() {
   const [entity, setEntity] = useState('')
@@ -42,10 +59,10 @@ export function AdminAuditPage() {
       cell: (r) => (
         <Badge
           tone={
-            r.action.startsWith('rpc')
-              ? 'aqua'
-              : r.action === 'delete'
-                ? 'danger'
+            r.action.includes('suspend') || r.action === 'delete'
+              ? 'danger'
+              : r.action.startsWith('rpc')
+                ? 'aqua'
                 : r.action === 'update'
                   ? 'info'
                   : 'success'
@@ -56,23 +73,44 @@ export function AdminAuditPage() {
       ),
     },
     {
-      key: 'entity',
-      header: 'Entidad',
-      cell: (r) => <span className="font-semibold">{r.entity}</span>,
+      key: 'module',
+      header: 'Módulo',
+      hideOnMobile: true,
+      cell: (r) => (
+        <span className="text-xs font-semibold text-navy">
+          {metaModule(r.metadata, r.entity)}
+        </span>
+      ),
     },
     {
-      key: 'id',
-      header: 'ID',
-      hideOnMobile: true,
-      cell: (r) => <span className="tnum text-xs text-steel-600">{r.entity_id?.slice(0, 8)}…</span>,
+      key: 'entity',
+      header: 'Registro',
+      cell: (r) => (
+        <span className="tnum text-xs">
+          {r.entity}
+          {r.entity_id ? ` · ${r.entity_id.slice(0, 8)}` : ''}
+        </span>
+      ),
+    },
+    {
+      key: 'result',
+      header: 'Resultado',
+      align: 'right',
+      cell: (r) => <span className="text-xs text-steel-600">{metaResult(r.metadata)}</span>,
     },
   ]
+
   return (
     <>
       <PageHeader
         title="Auditoría"
-        description="Registro de operaciones críticas sobre equipos, atletas, competencias e inscripciones."
+        description="Historial append-only de operaciones críticas. Los usuarios no pueden modificarlo."
       />
+      {logs.isError && (
+        <div className="mb-4">
+          <ErrorState message={toAppError(logs.error).message} onRetry={() => logs.refetch()} />
+        </div>
+      )}
       <Select
         value={entity}
         onChange={(e) => {

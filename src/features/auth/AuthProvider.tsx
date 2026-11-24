@@ -35,6 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    if (data && 'account_status' in data && data.account_status === 'suspended') {
+      setProfile(null)
+      await supabase.auth.signOut()
+      return
+    }
     setProfile(data ?? null)
   }, [])
 

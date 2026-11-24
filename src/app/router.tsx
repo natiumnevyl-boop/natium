@@ -14,7 +14,9 @@ import { CoachDashboardPage } from '@/features/dashboard/CoachDashboardPage'
 import { OrganizerDashboardPage } from '@/features/dashboard/OrganizerDashboardPage'
 import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage'
 import { AdminUsersPage } from '@/features/admin/AdminUsersPage'
+import { AdminUserDetailPage } from '@/features/admin/AdminUserDetailPage'
 import { AdminAuditPage } from '@/features/admin/AdminAuditPage'
+import { AdminSystemPage } from '@/features/admin/AdminSystemPage'
 import { TeamsPage } from '@/features/teams/pages/TeamsPage'
 import { TeamDetailPage } from '@/features/teams/pages/TeamDetailPage'
 import { AthletesPage } from '@/features/athletes/pages/AthletesPage'
@@ -102,7 +104,9 @@ export const router = createBrowserRouter([
             children: [
               { path: '/admin', element: <AdminDashboardPage /> },
               { path: '/admin/users', element: <AdminUsersPage /> },
+              { path: '/admin/users/:userId', element: <AdminUserDetailPage /> },
               { path: '/admin/audit', element: <AdminAuditPage /> },
+              { path: '/admin/system', element: <AdminSystemPage /> },
             ],
           },
           { path: '/home', element: <Navigate to="/" replace /> },
