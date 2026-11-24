@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { supabase, type Enums, type Tables } from '@/lib/supabase'
-import { unwrap } from '@/lib/errors'
+import { AppError, toAppError, unwrap } from '@/lib/errors'
 import { useAuth } from '@/features/auth/AuthProvider'
 
 export type Competition = Tables<'competitions'>
@@ -127,13 +127,31 @@ export function useSaveOrganization() {
         return unwrap(
           await supabase.from('organizations').update(row).eq('id', id).select().single(),
         )
-      return unwrap(
-        await supabase
-          .from('organizations')
-          .insert({ ...row, created_by: user!.id })
-          .select()
-          .single(),
+      // Owner membership is created by an AFTER INSERT trigger. Returning the
+      // row in the insert statement checks SELECT before that membership exists.
+      const newId = crypto.randomUUID()
+      const inserted = await supabase
+        .from('organizations')
+        .insert({ id: newId, ...row, created_by: user!.id })
+      if (inserted.error) throw toAppError(inserted.error)
+      const organization = unwrap(
+        await supabase.from('organizations').select('*').eq('id', newId).single(),
       )
+      const membership = unwrap(
+        await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('organization_id', newId)
+          .eq('user_id', user!.id)
+          .maybeSingle(),
+      )
+      if (!membership || membership.role !== 'owner') {
+        throw new AppError(
+          'La organización se guardó, pero no se confirmó tu acceso de propietario. Recarga la página.',
+          'membership',
+        )
+      }
+      return organization
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['organization'] }),
   })

@@ -17,7 +17,12 @@ export function toAppError(error: unknown): AppError {
   const code = e?.code ?? 'unknown'
   switch (code) {
     case '42501':
-      return new AppError('No tienes permisos para realizar esta acción.', 'forbidden')
+      return new AppError(
+        isTechnicalMessage(e.message)
+          ? 'No tienes permisos para realizar esta acción.'
+          : (e.message ?? 'No tienes permisos para realizar esta acción.'),
+        'forbidden',
+      )
     case '23505':
       return new AppError('Ya existe un registro con estos datos.', 'duplicate', e.details)
     case '23503':
@@ -29,7 +34,9 @@ export function toAppError(error: unknown): AppError {
     case '23514':
     case 'check_violation':
       return new AppError(
-        e.message ?? 'Los datos no cumplen las reglas de validación.',
+        e.message && !isTechnicalMessage(e.message)
+          ? e.message
+          : 'Los datos no cumplen las reglas de validación.',
         'validation',
         e.details,
       )
@@ -41,7 +48,18 @@ export function toAppError(error: unknown): AppError {
   if (e?.message?.includes('Failed to fetch')) {
     return new AppError('No se pudo conectar con el servidor. Revisa tu conexión.', 'network')
   }
+  if (code === 'PGRST116' || isTechnicalMessage(e?.message)) {
+    return new AppError('No se pudo completar la operación. Inténtalo de nuevo.', 'unexpected')
+  }
   return new AppError(e?.message ?? 'Ocurrió un error inesperado.', code, e?.details)
+}
+
+/** Postgres and PostgREST diagnostics are not shown in the interface. */
+function isTechnicalMessage(message: string | undefined): boolean {
+  if (!message) return false
+  return /row-level security|permission denied|duplicate key|violates |JWT|coerce the result|syntax error|PGRST\d|column |relation /i.test(
+    message,
+  )
 }
 
 /** Unwrap a Supabase response, throwing an AppError on failure. */

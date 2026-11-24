@@ -66,7 +66,7 @@ export function TeamForm({ initial, onSubmit, submitLabel = 'Guardar', onCancel 
           </Button>
         )}
         <Button type="submit" loading={formState.isSubmitting}>
-          {submitLabel}
+          {formState.isSubmitting ? 'Guardando…' : submitLabel}
         </Button>
       </div>
     </form>

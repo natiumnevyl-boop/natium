@@ -100,8 +100,8 @@ export function OrganizationPage() {
               {(p) => <Input {...p} {...register('country')} maxLength={2} className="uppercase" />}
             </Field>
             <div className="flex justify-end sm:col-span-2">
-              <Button type="submit" loading={save.isPending}>
-                Guardar
+              <Button type="submit" loading={save.isPending || formState.isSubmitting}>
+                {save.isPending || formState.isSubmitting ? 'Guardando…' : 'Guardar'}
               </Button>
             </div>
           </form>

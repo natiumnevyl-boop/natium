@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { supabase, type Tables } from '@/lib/supabase'
-import { unwrap } from '@/lib/errors'
+import { AppError, toAppError, unwrap } from '@/lib/errors'
 import { useAuth } from '@/features/auth/AuthProvider'
 
 export type Team = Tables<'teams'>
@@ -110,13 +110,30 @@ export function useCreateTeam() {
   return useMutation({
     mutationFn: async (input: TeamInput) => {
       const values = nullify(teamSchema.parse(input))
-      return unwrap(
+      // The owner membership is created by an AFTER INSERT trigger. Asking
+      // PostgREST to return the row in the same statement checks the SELECT
+      // policy before that membership exists and rolls the insert back.
+      const id = crypto.randomUUID()
+      const inserted = await supabase
+        .from('teams')
+        .insert({ id, ...values, created_by: user!.id })
+      if (inserted.error) throw toAppError(inserted.error)
+      const team = unwrap(await supabase.from('teams').select('*').eq('id', id).single())
+      const membership = unwrap(
         await supabase
-          .from('teams')
-          .insert({ ...values, created_by: user!.id })
-          .select()
-          .single(),
+          .from('team_members')
+          .select('role, status')
+          .eq('team_id', id)
+          .eq('user_id', user!.id)
+          .maybeSingle(),
       )
+      if (!membership || membership.role !== 'owner' || membership.status !== 'approved') {
+        throw new AppError(
+          'El equipo se guardó, pero no se confirmó tu acceso de propietario. Recarga la página.',
+          'membership',
+        )
+      }
+      return team
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: teamKeys.all }),
   })
