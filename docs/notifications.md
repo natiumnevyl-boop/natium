@@ -26,3 +26,4 @@ Estado: **infraestructura preparada, envíos desactivados**.
 4. Poner `NOTIFICATIONS_ENABLED = true` solo tras smoke real.
 
 Los correos de Auth (confirmación / recuperación) siguen en Supabase Auth SMTP y son independientes de este catálogo.
+Ver plantillas e integración Resend Auth en `docs/auth-emails.md`.

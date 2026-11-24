@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
+  <title>Acceso a NATIUM</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+    a { color: #173D55; }
+    @media (prefers-color-scheme: dark) {
+      .email-bg { background-color: #0c2235 !important; }
+      .email-card { background-color: #112d44 !important; }
+      .email-title { color: #EEF6FA !important; }
+      .email-text { color: #97ADBD !important; }
+      .email-muted { color: #6F8A9C !important; }
+      .email-footer { background-color: #0c2235 !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#EEF6FA;">
+  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
+    Tu enlace de acceso seguro a NATIUM.
+  </div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="email-bg" style="background-color:#EEF6FA;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;" class="email-card">
+          <tr>
+            <td style="background-color:#081826;padding:28px 32px;border-radius:16px 16px 0 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td valign="middle" width="48" style="width:48px;">
+                    <img src="https://natium-weld.vercel.app/email/natium-mark.png" width="40" height="40" alt="NATIUM" style="display:block;width:40px;height:40px;border-radius:10px;" />
+                  </td>
+                  <td valign="middle" style="padding-left:12px;">
+                    <div style="font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.02em;color:#FFFFFF;line-height:1.1;">NATIUM</div>
+                    <div style="font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:#43C9E8;margin-top:4px;">Gestión deportiva</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="height:3px;line-height:3px;font-size:0;background-color:#43C9E8;">&nbsp;</td>
+          </tr>
+          <tr>
+            <td style="background-color:#FFFFFF;padding:36px 32px 28px 32px;" class="email-card">
+              <h1 class="email-title" style="margin:0 0 8px 0;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;color:#081826;">Acceso a NATIUM</h1>
+              <p style="margin:0 0 24px 0;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;font-weight:600;color:#173D55;">Enlace mágico de inicio de sesión.</p>
+              <div class="email-text" style="font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+                <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#42596A;">Usa el botón para acceder a tu cuenta sin introducir la contraseña en este dispositivo.</p><p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#42596A;">El enlace es personal, de un solo uso y tiene una vigencia limitada por seguridad.</p>
+              </div>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 8px 0;">
+                <tr>
+                  <td align="center" bgcolor="#081826" style="border-radius:10px;background-color:#081826;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;line-height:1;color:#FFFFFF;text-decoration:none;border-radius:10px;">
+                      Iniciar sesión
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p class="email-muted" style="margin:20px 0 0 0;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6F8A9C;">
+                Si el botón no funciona, copia y pega este enlace en tu navegador:<br />
+                <a href="{{ .ConfirmationURL }}" style="color:#173D55;word-break:break-all;">{{ .ConfirmationURL }}</a>
+              </p>
+              <p class="email-muted" style="margin:20px 0 0 0;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6F8A9C;">Si no solicitaste este acceso, ignora el mensaje. Nadie podrá entrar sin este enlace.</p>
+              <div style="margin-top:28px;padding-top:20px;border-top:1px solid #DCE9F0;" class="email-muted">
+                <div style="font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+                  <p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#6F8A9C;">Acceso temporal y verificable.</p><p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#6F8A9C;">NATIUM — Gestión deportiva de nueva generación.</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="email-footer" style="background-color:#EEF6FA;padding:20px 32px 8px 32px;border-radius:0 0 16px 16px;border-top:1px solid #DCE9F0;">
+              <p style="margin:0 0 6px 0;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#6F8A9C;text-align:center;">
+                Este mensaje fue enviado por <strong style="color:#081826;">NATIUM</strong>
+              </p>
+              <p style="margin:0 0 6px 0;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.5;color:#97ADBD;text-align:center;">
+                <a href="https://natium-weld.vercel.app" style="color:#173D55;text-decoration:none;">natium-weld.vercel.app</a>
+              </p>
+              <p style="margin:0;font-family:Manrope,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.5;color:#97ADBD;text-align:center;">
+                Comunicación transaccional de autenticación. No respondas a este correo.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
