@@ -2,6 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import { env } from '@/config/env'
 
+if (!env) {
+  throw new Error('Supabase client loaded without VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+}
+
 // Only the anon key is ever used in the browser. RLS enforces authorization.
 export const supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
