@@ -1375,6 +1375,33 @@ export type Database = {
       }
       admin_user_detail: { Args: { p_user_id: string }; Returns: Json }
       admin_system_status: { Args: Record<PropertyKey, never>; Returns: Json }
+      admin_list_audit_logs: {
+        Args: {
+          p_search?: string | null
+          p_from?: string | null
+          p_to?: string | null
+          p_actor_id?: string | null
+          p_action?: string | null
+          p_entity?: string | null
+          p_result?: string | null
+          p_category?: string | null
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: Json
+      }
+      admin_audit_stats: {
+        Args: {
+          p_from?: string | null
+          p_to?: string | null
+          p_category?: string | null
+        }
+        Returns: Json
+      }
+      admin_audit_category: {
+        Args: { p_action: string; p_entity: string; p_metadata: Json }
+        Returns: string
+      }
       admin_set_profile_role: {
         Args: {
           p_user_id: string

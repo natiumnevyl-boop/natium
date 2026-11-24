@@ -74,6 +74,7 @@ export type HealthProbeState =
   | 'unavailable'
   | 'unchecked'
   | 'checking'
+  | 'verify_error'
 
 export interface HealthProbe {
   id: string
@@ -86,8 +87,9 @@ export interface HealthProbe {
   detail: string
 }
 
-export interface AdminHealthResponse {
+export interface AdminExportMetrics {
   checked_at: string
+  supabase: { ok: boolean; detail: string }
   exports: {
     pending: number
     processing: number
@@ -100,9 +102,42 @@ export interface AdminHealthResponse {
       created_at: string
       error_report: unknown
     }[]
-  } | null
-  supabase_rpc: { ok: boolean; detail: string } | null
+  }
+}
+
+export interface AdminHealthResponse {
+  checked_at: string
   services: HealthProbe[]
+  error?: string
+}
+
+export type AuditCategory =
+  | 'all'
+  | 'commercial'
+  | 'admin'
+  | 'security'
+  | 'maintenance'
+  | 'unclassified'
+
+export interface AdminAuditRow {
+  id: number
+  actor_id: string | null
+  action: string
+  entity: string
+  entity_id: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+  category: Exclude<AuditCategory, 'all'>
+  result: string
+  actor_name: string | null
+  actor_email: string | null
+}
+
+export interface AdminAuditStats {
+  total: number
+  ok: number
+  error: number
+  admin: number
 }
 
 export function useAdminDashboardStats(fromIso: string, toIso: string) {
@@ -191,50 +226,135 @@ export function useSetAccountStatus() {
   })
 }
 
-export function useAuditLogs(entity: string, page: number, pageSize = 50) {
+export function useAdminExportMetrics(enabled = true) {
   return useQuery({
-    queryKey: ['admin', 'audit', entity, page],
-    queryFn: async () => {
-      let q = supabase
-        .from('audit_logs')
-        .select('*, actor:profiles(full_name, email)', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range((page - 1) * pageSize, page * pageSize - 1)
-      if (entity) q = q.eq('entity', entity)
-      const res = await q
-      if (res.error) throw res.error
-      return { rows: res.data, total: res.count ?? 0 }
-    },
+    queryKey: ['admin', 'system', 'exports'],
+    enabled,
+    refetchInterval: 120_000,
+    staleTime: 30_000,
+    retry: 1,
+    queryFn: async () =>
+      unwrap(await supabase.rpc('admin_system_status')) as unknown as AdminExportMetrics,
   })
 }
 
-async function invokeAdminHealth(): Promise<AdminHealthResponse> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const accessToken = sessionData.session?.access_token
-  if (!accessToken) throw new AppError('Tu sesión expiró. Vuelve a iniciar sesión.')
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
+export async function invokeAdminHealth(accessToken: string): Promise<AdminHealthResponse> {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-health`
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
-    },
-  })
+  let res: Response
+  try {
+    res = await fetchWithTimeout(
+      url,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+        },
+      },
+      25_000,
+    )
+  } catch (err) {
+    const aborted = err instanceof Error && /abort/i.test(err.message)
+    throw new AppError(
+      aborted
+        ? 'Tiempo de espera agotado al verificar infraestructura.'
+        : 'No se pudo conectar con el monitor de infraestructura.',
+    )
+  }
 
-  const body = (await res.json().catch(() => ({}))) as AdminHealthResponse & { error?: string }
+  const body = (await res.json().catch(() => ({}))) as AdminHealthResponse & {
+    error?: string
+    detail?: string
+  }
   if (!res.ok) {
-    throw new AppError(body.error || 'No se pudo verificar la infraestructura.')
+    throw new AppError(body.error || `Error HTTP ${res.status} del monitor`)
   }
   return body
 }
 
-export function useAdminSystemStatus() {
+export function useAdminInfrastructure(enabled = true) {
   return useQuery({
-    queryKey: ['admin', 'system'],
+    queryKey: ['admin', 'system', 'infra'],
+    enabled,
     refetchInterval: 120_000,
-    staleTime: 60_000,
-    queryFn: invokeAdminHealth,
+    staleTime: 30_000,
+    retry: 1,
+    queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) throw new AppError('Tu sesión expiró. Vuelve a iniciar sesión.')
+      return invokeAdminHealth(accessToken)
+    },
+  })
+}
+
+export function useAuditLogs(opts: {
+  search: string
+  from: string
+  to: string
+  actorId: string
+  action: string
+  entity: string
+  result: string
+  category: AuditCategory
+  page: number
+  pageSize: number
+  enabled?: boolean
+}) {
+  return useQuery({
+    queryKey: ['admin', 'audit', 'list', opts],
+    enabled: opts.enabled !== false,
+    queryFn: async () => {
+      const data = unwrap(
+        await supabase.rpc('admin_list_audit_logs', {
+          p_search: opts.search.trim() || null,
+          p_from: opts.from ? new Date(`${opts.from}T00:00:00`).toISOString() : null,
+          p_to: opts.to ? new Date(`${opts.to}T23:59:59`).toISOString() : null,
+          p_actor_id: opts.actorId || null,
+          p_action: opts.action || null,
+          p_entity: opts.entity || null,
+          p_result: opts.result || null,
+          p_category: opts.category === 'all' ? null : opts.category,
+          p_limit: opts.pageSize,
+          p_offset: (opts.page - 1) * opts.pageSize,
+        }),
+      ) as unknown as { total: number; rows: AdminAuditRow[]; limit: number; offset: number }
+      return data
+    },
+  })
+}
+
+export function useAuditStats(opts: {
+  from: string
+  to: string
+  category: AuditCategory
+  enabled?: boolean
+}) {
+  return useQuery({
+    queryKey: ['admin', 'audit', 'stats', opts],
+    enabled: opts.enabled !== false,
+    queryFn: async () =>
+      unwrap(
+        await supabase.rpc('admin_audit_stats', {
+          p_from: opts.from ? new Date(`${opts.from}T00:00:00`).toISOString() : null,
+          p_to: opts.to ? new Date(`${opts.to}T23:59:59`).toISOString() : null,
+          p_category: opts.category === 'all' ? null : opts.category,
+        }),
+      ) as unknown as AdminAuditStats,
   })
 }
 
