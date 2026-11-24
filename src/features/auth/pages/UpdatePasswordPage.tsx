@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
-import { Alert, Button, Field, Input } from '@/shared/ui'
+import { Alert, Button, Field, PasswordInput } from '@/shared/ui'
 
 const schema = z
   .object({ password: z.string().min(8, 'Mínimo 8 caracteres'), confirm: z.string() })
@@ -30,12 +30,12 @@ export function UpdatePasswordPage() {
         {error && <Alert tone="danger">{error}</Alert>}
         <Field label="Contraseña" error={formState.errors.password?.message} required>
           {(p) => (
-            <Input {...p} type="password" autoComplete="new-password" {...register('password')} />
+            <PasswordInput {...p} autoComplete="new-password" {...register('password')} />
           )}
         </Field>
         <Field label="Confirmar" error={formState.errors.confirm?.message} required>
           {(p) => (
-            <Input {...p} type="password" autoComplete="new-password" {...register('confirm')} />
+            <PasswordInput {...p} autoComplete="new-password" {...register('confirm')} />
           )}
         </Field>
         <Button type="submit" size="lg" loading={formState.isSubmitting}>

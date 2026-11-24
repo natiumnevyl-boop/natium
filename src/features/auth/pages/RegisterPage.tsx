@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { Alert, Button, Field, Input } from '@/shared/ui'
+import { Alert, Button, Field, Input, PasswordInput } from '@/shared/ui'
 import { cn } from '@/shared/utils/cn'
 import { registerSchema, type RegisterInput } from '../schemas'
 
@@ -98,12 +98,20 @@ export function RegisterPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Contraseña" error={formState.errors.password?.message} required>
             {(p) => (
-              <Input {...p} type="password" autoComplete="new-password" {...register('password')} />
+              <PasswordInput
+                {...p}
+                autoComplete="new-password"
+                {...register('password')}
+              />
             )}
           </Field>
           <Field label="Confirmar" error={formState.errors.confirm?.message} required>
             {(p) => (
-              <Input {...p} type="password" autoComplete="new-password" {...register('confirm')} />
+              <PasswordInput
+                {...p}
+                autoComplete="new-password"
+                {...register('confirm')}
+              />
             )}
           </Field>
         </div>

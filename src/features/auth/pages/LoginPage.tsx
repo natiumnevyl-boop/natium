@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { Alert, Button, Field, Input } from '@/shared/ui'
+import { Alert, Button, Field, Input, PasswordInput } from '@/shared/ui'
 import { loginSchema, type LoginInput } from '../schemas'
 
 function safeInternalPath(value: string | null | undefined) {
@@ -50,9 +50,8 @@ export function LoginPage() {
         </Field>
         <Field label="Contraseña" error={formState.errors.password?.message} required>
           {(p) => (
-            <Input
+            <PasswordInput
               {...p}
-              type="password"
               autoComplete="current-password"
               {...register('password')}
             />
