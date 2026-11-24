@@ -13,6 +13,7 @@ import {
 import { Badge, Card, CardBody, CardHeader, Field, Input, PageHeader, StatCard } from '@/shared/ui'
 import { ErrorState } from '@/shared/ui/StatusPages'
 import { fmtDateTime } from '@/shared/utils/dates'
+import { toAppError } from '@/lib/errors'
 import { useAdminDashboardStats } from './api'
 
 function daysAgoIso(days: number) {
@@ -61,7 +62,7 @@ export function AdminDashboardPage() {
     <>
       <PageHeader
         title="Administración de la plataforma"
-        description="Supervisión global independiente de organizaciones y equipos."
+        description="Vista global de usuarios, competencias e infraestructura."
         actions={
           <div className="flex flex-wrap items-end gap-2">
             <Field label="Desde" className="w-[9.5rem]">
@@ -80,11 +81,15 @@ export function AdminDashboardPage() {
       {stats.isError && (
         <div className="mb-5">
           <ErrorState
-            message="No se pudieron cargar los indicadores."
+            message={toAppError(stats.error).message}
             onRetry={() => stats.refetch()}
           />
         </div>
       )}
+      <p className="mb-3 text-xs text-steel-600">
+        Totales operativos de toda la plataforma. «Usuarios nuevos» y las gráficas respetan el
+        rango de fechas seleccionado.
+      </p>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Usuarios"
@@ -97,6 +102,7 @@ export function AdminDashboardPage() {
           label="Usuarios nuevos"
           value={d?.users_new}
           icon={<UserRound className="size-5" />}
+          to="/admin/users"
           tone="aqua"
           loading={stats.isLoading}
         />
@@ -111,6 +117,7 @@ export function AdminDashboardPage() {
           label="Organizadores"
           value={d?.organizers}
           icon={<Flag className="size-5" />}
+          to="/admin/users"
           loading={stats.isLoading}
         />
         <StatCard
@@ -147,12 +154,14 @@ export function AdminDashboardPage() {
           label="Exportaciones MDB"
           value={d?.exports_mdb}
           icon={<FileOutput className="size-5" />}
+          to="/admin/system"
           loading={stats.isLoading}
         />
         <StatCard
           label="Exportaciones CSV"
           value={d?.exports_csv}
           icon={<FileOutput className="size-5" />}
+          to="/admin/system"
           loading={stats.isLoading}
         />
         <StatCard
@@ -168,11 +177,11 @@ export function AdminDashboardPage() {
       <div className="mt-6 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Card>
           <CardHeader
-            title="Crecimiento"
+            title="Actividad en el periodo"
             description={
               hasSeriesSignal
                 ? 'Altas de usuarios, envíos de inscripción y exportaciones por día.'
-                : 'Aún no hay suficiente actividad en el periodo para graficar.'
+                : 'Todavía no hay actividad suficiente en este periodo para graficar.'
             }
           />
           <CardBody className="space-y-4">
@@ -199,7 +208,7 @@ export function AdminDashboardPage() {
               </>
             ) : (
               <p className="py-8 text-center text-sm text-steel-600">
-                Los gráficos aparecerán cuando exista actividad registrada en el rango.
+                Cuando comience la operación, aquí verás la tendencia diaria.
               </p>
             )}
           </CardBody>
@@ -208,7 +217,7 @@ export function AdminDashboardPage() {
         <Card>
           <CardHeader
             title="Actividad reciente"
-            description="Auditoría real; no se inventa historial."
+            description="Últimas operaciones registradas en la plataforma."
             action={
               <Link to="/admin/audit" className="text-xs font-semibold text-ocean hover:underline">
                 Ver todo
@@ -233,7 +242,7 @@ export function AdminDashboardPage() {
             ))}
             {stats.data?.recent_audit.length === 0 && (
               <li className="px-5 py-8 text-center text-sm text-steel-600">
-                Sin eventos de auditoría todavía.
+                Aún no hay actividad registrada.
               </li>
             )}
           </ul>

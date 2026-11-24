@@ -21,3 +21,6 @@ reference/**
 
 # Java build output
 tools/mdb-exporter/target/
+
+# Local ops backups / one-off cleanup scripts (may contain PII)
+tmp/

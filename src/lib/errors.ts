@@ -57,7 +57,7 @@ export function toAppError(error: unknown): AppError {
 /** Postgres and PostgREST diagnostics are not shown in the interface. */
 function isTechnicalMessage(message: string | undefined): boolean {
   if (!message) return false
-  return /row-level security|permission denied|duplicate key|violates |JWT|coerce the result|syntax error|PGRST\d|column |relation /i.test(
+  return /row-level security|permission denied|duplicate key|violates |JWT|coerce the result|syntax error|PGRST\d|column |relation |invalid input value for enum|PL\/pgSQL|SQLSTATE/i.test(
     message,
   )
 }

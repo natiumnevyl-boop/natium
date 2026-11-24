@@ -104,7 +104,7 @@ export function AdminAuditPage() {
     <>
       <PageHeader
         title="Auditoría"
-        description="Historial append-only de operaciones críticas. Los usuarios no pueden modificarlo."
+        description="Historial de operaciones administrativas y operativas de la plataforma."
       />
       {logs.isError && (
         <div className="mb-4">

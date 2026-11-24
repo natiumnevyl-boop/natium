@@ -51,7 +51,7 @@ export function AdminUserDetailPage() {
       <PageHeader
         breadcrumbs={[{ label: 'Usuarios', to: '/admin/users' }, { label: p.email }]}
         title={p.full_name || p.email}
-        description="Detalle administrativo. No se muestran secretos de autenticación."
+        description="Información de la cuenta, vínculos y actividad reciente."
         actions={
           !isSelf && (
             <Button

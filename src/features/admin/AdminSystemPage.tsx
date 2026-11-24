@@ -13,7 +13,7 @@ export function AdminSystemPage() {
     <>
       <PageHeader
         title="Estado del sistema"
-        description="Indicadores reales de infraestructura y trabajos de exportación. Sin valores simulados."
+        description="Estado de servicios y trabajos de exportación."
         actions={
           <button
             type="button"

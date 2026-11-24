@@ -153,7 +153,7 @@ export function AdminUsersPage() {
     <>
       <PageHeader
         title="Usuarios"
-        description="Consulta global, asignación de roles y suspensión auditada. Sin contraseñas ni tokens."
+        description="Directorio global de cuentas: roles, estado y vínculos con equipos u organizaciones."
       />
       {users.isError && (
         <div className="mb-4">
@@ -203,6 +203,11 @@ export function AdminUsersPage() {
         rowKey={(p) => p.id}
         loading={users.isLoading}
         onRowClick={(p) => navigate(`/admin/users/${p.id}`)}
+        emptyState={
+          <div className="px-5 py-10 text-center text-sm text-steel-600">
+            No hay usuarios que coincidan con los filtros.
+          </div>
+        }
       />
       <Pagination
         page={page}
