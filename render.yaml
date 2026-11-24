@@ -1,0 +1,23 @@
+# NATIUM Meet Manager MDB exporter — Render Blueprint (free web service).
+# Secrets (MDB_EXPORTER_TOKEN) must be set in the Render dashboard, never committed.
+
+services:
+  - type: web
+    name: natium-mdb-exporter
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    dockerfilePath: ./services/mdb-exporter/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: MDB_EXPORTER_TOKEN
+        sync: false
+      - key: MDB_MAX_BODY_BYTES
+        value: "2000000"
+      - key: MDB_MAX_CONCURRENT
+        value: "2"
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=55.0 -XX:+ExitOnOutOfMemoryError -Djava.awt.headless=true"

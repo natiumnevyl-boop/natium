@@ -14,17 +14,19 @@ import { toast } from '@/shared/ui/Toaster'
 import { toAppError } from '@/lib/errors'
 import { fmtDateTime } from '@/shared/utils/dates'
 import {
+  formatBytes,
   useDownloadExportJob,
   useExportJobs,
   useExportPreview,
   usePrepareAndGenerateExport,
   type ExportJob,
+  type ExportPhase,
 } from '../api'
 import type { ExportFormat } from '../model'
 import { validateExportSnapshot } from '../validation'
 
 const statusLabel: Record<ExportJob['status'], string> = {
-  pending: 'Pendiente de validación',
+  pending: 'En cola',
   running: 'Generando archivo',
   completed: 'Archivo disponible',
   failed: 'Error de generación',
@@ -38,6 +40,15 @@ const statusTone: Record<ExportJob['status'], 'neutral' | 'info' | 'success' | '
     failed: 'danger',
   }
 
+const phaseLabel: Record<ExportPhase, string> = {
+  idle: 'Generar archivo de inscripción',
+  validating: 'Validando inscripciones…',
+  preparing: 'Preparando archivo…',
+  generating: 'Generando archivo MDB…',
+  ready: 'Archivo listo para descargar',
+  error: 'Error de generación',
+}
+
 export function ExportPanel({
   competitionId,
   teams,
@@ -46,13 +57,13 @@ export function ExportPanel({
   teams: Array<{ id: string; name: string }>
 }) {
   const [teamId, setTeamId] = useState('')
-  const [format, setFormat] = useState<ExportFormat>('csv_generic')
-  const [phase, setPhase] = useState<
-    'idle' | 'validating' | 'generating' | 'ready' | 'error'
-  >('idle')
+  const [format, setFormat] = useState<ExportFormat>('mdb_meet_manager')
+  const [phase, setPhase] = useState<ExportPhase>('idle')
+  const [lastJob, setLastJob] = useState<ExportJob | null>(null)
 
   const preview = useExportPreview(competitionId, teamId || undefined)
-  const jobs = useExportJobs(competitionId)
+  const poll = phase === 'preparing' || phase === 'generating'
+  const jobs = useExportJobs(competitionId, { poll })
   const generate = usePrepareAndGenerateExport(competitionId)
   const download = useDownloadExportJob()
 
@@ -70,9 +81,11 @@ export function ExportPanel({
       }
     : { teams: 0, athletes: 0, entries: 0 }
 
-  const canGenerate = !generate.isPending && errors.length === 0 && counts.entries > 0
+  const busy = generate.isPending || phase === 'preparing' || phase === 'generating'
+  const canGenerate = !busy && errors.length === 0 && counts.entries > 0
 
   const onGenerate = async () => {
+    setLastJob(null)
     setPhase('validating')
     try {
       if (errors.length) {
@@ -80,27 +93,37 @@ export function ExportPanel({
         toast.error(errors[0]?.message ?? 'Hay errores de validación')
         return
       }
-      setPhase('generating')
-      await generate.mutateAsync({ format, teamId: teamId || undefined })
+      const result = await generate.mutateAsync({
+        format,
+        teamId: teamId || undefined,
+        onPhase: setPhase,
+      })
+      setLastJob(result.job)
       setPhase('ready')
       toast.success(
         format === 'csv_generic'
-          ? 'Archivo CSV generado y descargado'
-          : 'Archivo MDB generado y descargado',
+          ? 'Archivo CSV generado'
+          : 'Archivo MDB listo para descargar',
       )
       await Promise.all([preview.refetch(), jobs.refetch()])
     } catch (error) {
       setPhase('error')
       toast.error(toAppError(error).message)
+      await jobs.refetch()
     }
   }
+
+  const readyJob =
+    lastJob?.status === 'completed'
+      ? lastJob
+      : (jobs.data ?? []).find((j) => j.status === 'completed' && j.format === format) ?? null
 
   return (
     <div className="space-y-5">
       <Card>
         <CardHeader
           title="Exportar inscripciones"
-          description="Genera el archivo a partir de inscripciones aceptadas. El CSV es el respaldo operativo; el MDB de Meet Manager requiere el servicio Jackcess."
+          description="Genera el archivo a partir de inscripciones aceptadas. El MDB es el formato Meet Manager; el CSV es solo respaldo operativo."
         />
         <CardBody className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-3">
@@ -127,17 +150,15 @@ export function ExportPanel({
               onChange={(e) => setFormat(e.target.value as ExportFormat)}
               aria-label="Formato de exportación"
             >
-              <option value="csv_generic">CSV operativo (respaldo)</option>
               <option value="mdb_meet_manager">MDB Meet Manager</option>
+              <option value="csv_generic">CSV operativo (respaldo)</option>
             </Select>
           </div>
 
-          {format === 'mdb_meet_manager' && (
-            <Alert tone="warning" title="Formato MDB pendiente de servicio">
-              El adaptador Hy-Tek Meet Manager (JET4) ya está implementado con Jackcess y verificado
-              fuera de Vercel. Para habilitar «Descargar archivo MDB» en producción hay que desplegar
-              el contenedor documentado en <code>services/mdb-exporter</code> y configurar los
-              secretos de la Edge Function <code>generate-mdb</code>. El CSV no sustituye ese formato.
+          {format === 'csv_generic' && (
+            <Alert tone="warning" title="Respaldo operativo">
+              El CSV no sustituye el archivo que importa Meet Manager. Usa MDB para el programa del
+              organizador.
             </Alert>
           )}
 
@@ -166,6 +187,51 @@ export function ExportPanel({
             </Alert>
           )}
 
+          {(phase === 'validating' || phase === 'preparing' || phase === 'generating') && (
+            <Alert tone="info" title={phaseLabel[phase]}>
+              El trabajo queda registrado en el servidor. Si el generador estaba suspendido, el
+              primer intento puede tardar mientras arranca.
+            </Alert>
+          )}
+
+          {phase === 'ready' && readyJob && (
+            <Alert tone="success" title="Archivo listo para descargar">
+              <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-steel-600">Archivo</dt>
+                  <dd className="font-semibold text-navy">{readyJob.file_name ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-steel-600">Generado</dt>
+                  <dd>{fmtDateTime(readyJob.completed_at ?? readyJob.created_at)}</dd>
+                </div>
+                <div>
+                  <dt className="text-steel-600">Equipos</dt>
+                  <dd>{(readyJob.summary as { teams?: number } | null)?.teams ?? counts.teams}</dd>
+                </div>
+                <div>
+                  <dt className="text-steel-600">Atletas</dt>
+                  <dd>
+                    {(readyJob.summary as { athletes?: number } | null)?.athletes ?? counts.athletes}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-steel-600">Pruebas</dt>
+                  <dd>
+                    {(readyJob.summary as { entries?: number } | null)?.entries ?? counts.entries}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-steel-600">Tamaño / formato</dt>
+                  <dd>
+                    {formatBytes(readyJob.file_size_bytes)} ·{' '}
+                    {readyJob.format === 'mdb_meet_manager' ? 'MDB' : 'CSV'}
+                  </dd>
+                </div>
+              </dl>
+            </Alert>
+          )}
+
           <div className="flex flex-wrap items-center gap-3">
             <Button
               leftIcon={
@@ -175,19 +241,39 @@ export function ExportPanel({
                   <FileType2 className="size-4" />
                 )
               }
-              loading={generate.isPending}
+              loading={busy}
               disabled={!canGenerate}
               onClick={() => void onGenerate()}
             >
-              {generate.isPending
-                ? phase === 'validating'
-                  ? 'Validando información…'
-                  : 'Generando archivo…'
-                : 'Generar archivo de inscripción'}
+              {busy
+                ? phaseLabel[phase]
+                : format === 'mdb_meet_manager'
+                  ? 'Generar archivo MDB'
+                  : 'Generar archivo de inscripción'}
             </Button>
-            {phase === 'ready' && (
-              <Badge tone="success">Archivo disponible</Badge>
+            {readyJob?.status === 'completed' && readyJob.file_path && (
+              <Button
+                variant="aqua"
+                leftIcon={<Download className="size-4" />}
+                loading={download.isPending}
+                onClick={() =>
+                  download.mutate(readyJob, {
+                    onError: (e) => toast.error(toAppError(e).message),
+                    onSuccess: () =>
+                      toast.success(
+                        readyJob.format === 'mdb_meet_manager'
+                          ? 'Descarga MDB iniciada'
+                          : 'Descarga CSV iniciada',
+                      ),
+                  })
+                }
+              >
+                {readyJob.format === 'mdb_meet_manager'
+                  ? 'Descargar archivo MDB'
+                  : 'Descargar CSV'}
+              </Button>
             )}
+            {phase === 'ready' && <Badge tone="success">Archivo disponible</Badge>}
             {phase === 'error' && <Badge tone="danger">Error de generación</Badge>}
             {phase === 'idle' && errors.length > 0 && (
               <Badge tone="warning">Pendiente de validación</Badge>
@@ -200,7 +286,10 @@ export function ExportPanel({
         <CardHeader title="Exportaciones anteriores" />
         <ul className="divide-y divide-ice-200">
           {(jobs.data ?? []).map((job) => (
-            <li key={job.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
+            <li
+              key={job.id}
+              className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm"
+            >
               <div>
                 <p className="font-semibold text-navy">
                   v{job.version} · {job.format === 'mdb_meet_manager' ? 'MDB' : 'CSV'}
@@ -211,6 +300,7 @@ export function ExportPanel({
                   {job.summary && typeof job.summary === 'object'
                     ? ` · ${(job.summary as { athletes?: number }).athletes ?? '—'} atletas · ${(job.summary as { entries?: number }).entries ?? '—'} pruebas`
                     : ''}
+                  {job.file_size_bytes ? ` · ${formatBytes(job.file_size_bytes)}` : ''}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -234,6 +324,11 @@ export function ExportPanel({
                     }
                   >
                     {job.format === 'mdb_meet_manager' ? 'Descargar archivo MDB' : 'Descargar CSV'}
+                  </Button>
+                )}
+                {job.status === 'failed' && (
+                  <Button size="sm" variant="secondary" onClick={() => void onGenerate()}>
+                    Reintentar
                   </Button>
                 )}
               </div>

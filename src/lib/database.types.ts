@@ -596,11 +596,15 @@ export type Database = {
           created_at: string
           error_report: NonNullable<Json>
           export_profile_id: string | null
+          attempt_count: number
           file_name: string | null
           file_path: string | null
+          file_size_bytes: number | null
           format: string
           id: string
+          last_error: string | null
           requested_by: string
+          snapshot: Json | null
           status: Database['public']['Enums']['export_status']
           summary: NonNullable<Json>
           team_id: string | null
@@ -608,6 +612,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          attempt_count?: number
           competition_id: string
           completed_at?: string | null
           created_at?: string
@@ -615,15 +620,19 @@ export type Database = {
           export_profile_id?: string | null
           file_name?: string | null
           file_path?: string | null
+          file_size_bytes?: number | null
           format?: string
           id?: string
+          last_error?: string | null
           requested_by: string
+          snapshot?: Json | null
           status?: Database['public']['Enums']['export_status']
           summary?: NonNullable<Json>
           team_id?: string | null
           version?: number
         }
         Update: {
+          attempt_count?: number
           competition_id?: string
           completed_at?: string | null
           created_at?: string
@@ -631,9 +640,12 @@ export type Database = {
           export_profile_id?: string | null
           file_name?: string | null
           file_path?: string | null
+          file_size_bytes?: number | null
           format?: string
           id?: string
+          last_error?: string | null
           requested_by?: string
+          snapshot?: Json | null
           status?: Database['public']['Enums']['export_status']
           summary?: NonNullable<Json>
           team_id?: string | null
@@ -1237,9 +1249,16 @@ export type Database = {
           similarity: number
         }[]
       }
+      claim_export_job: { Args: { p_job_id: string }; Returns: Json }
       complete_export_job: {
-        Args: { p_file_name?: string; p_file_path: string; p_job_id: string }
+        Args: {
+          p_file_name?: string
+          p_file_path: string
+          p_file_size_bytes?: number
+          p_job_id: string
+        }
         Returns: {
+          attempt_count: number
           competition_id: string
           completed_at: string | null
           created_at: string
@@ -1247,9 +1266,12 @@ export type Database = {
           export_profile_id: string | null
           file_name: string | null
           file_path: string | null
+          file_size_bytes: number | null
           format: string
           id: string
+          last_error: string | null
           requested_by: string
+          snapshot: Json | null
           status: Database['public']['Enums']['export_status']
           summary: NonNullable<Json>
           team_id: string | null
@@ -1265,6 +1287,7 @@ export type Database = {
       fail_export_job: {
         Args: { p_errors?: Json; p_job_id: string }
         Returns: {
+          attempt_count: number
           competition_id: string
           completed_at: string | null
           created_at: string
@@ -1272,9 +1295,12 @@ export type Database = {
           export_profile_id: string | null
           file_name: string | null
           file_path: string | null
+          file_size_bytes: number | null
           format: string
           id: string
+          last_error: string | null
           requested_by: string
+          snapshot: Json | null
           status: Database['public']['Enums']['export_status']
           summary: NonNullable<Json>
           team_id: string | null
