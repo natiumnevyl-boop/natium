@@ -16,7 +16,7 @@ export function StatCard({ label, value, icon, to, tone = 'default', loading }: 
   const inner = (
     <div
       className={cn(
-        'flex h-full items-center gap-4 rounded-lg border bg-white p-4 shadow-card transition-all',
+        'flex h-full items-center gap-3 rounded-lg border bg-white px-3.5 py-3 shadow-card transition-all',
         to && 'hover:-translate-y-0.5 hover:shadow-float',
         tone === 'warning' && value !== 0 && value !== undefined
           ? 'border-warning/40'
@@ -26,7 +26,7 @@ export function StatCard({ label, value, icon, to, tone = 'default', loading }: 
       {icon && (
         <div
           className={cn(
-            'flex size-11 shrink-0 items-center justify-center rounded-md',
+            'flex size-9 shrink-0 items-center justify-center rounded-md',
             tone === 'aqua'
               ? 'bg-aqua text-navy'
               : tone === 'warning'
@@ -37,14 +37,14 @@ export function StatCard({ label, value, icon, to, tone = 'default', loading }: 
           {icon}
         </div>
       )}
-      <div className="min-w-0">
-        <p className="truncate text-xs font-semibold tracking-wide text-steel-600 uppercase">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[11px] font-semibold tracking-wide text-steel-600 uppercase">
           {label}
         </p>
         {loading ? (
-          <Skeleton className="mt-1 h-7 w-16" />
+          <Skeleton className="mt-0.5 h-6 w-12" />
         ) : (
-          <p className="tnum text-2xl font-extrabold text-navy">{value ?? '—'}</p>
+          <p className="tnum text-xl font-extrabold leading-tight text-navy">{value ?? '—'}</p>
         )}
       </div>
     </div>

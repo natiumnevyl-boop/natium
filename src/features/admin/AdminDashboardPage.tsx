@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
+  Building2,
   ClipboardList,
   FileOutput,
   Flag,
@@ -32,7 +33,7 @@ function MiniBars({
 }) {
   const max = Math.max(1, ...series.map((s) => s[field]))
   return (
-    <div className="flex h-24 items-end gap-0.5">
+    <div className="flex h-20 items-end gap-0.5">
       {series.map((s) => {
         const h = Math.round((s[field] / max) * 100)
         return (
@@ -61,8 +62,8 @@ export function AdminDashboardPage() {
   return (
     <>
       <PageHeader
-        title="Administración de la plataforma"
-        description="Vista global de usuarios, competencias e infraestructura."
+        title="Administración"
+        description="Vista global de la plataforma: usuarios, operación e infraestructura."
         actions={
           <div className="flex flex-wrap items-end gap-2">
             <Field label="Desde" className="w-[9.5rem]">
@@ -86,95 +87,110 @@ export function AdminDashboardPage() {
           />
         </div>
       )}
-      <p className="mb-3 text-xs text-steel-600">
-        Totales operativos de toda la plataforma. «Usuarios nuevos» y las gráficas respetan el
-        rango de fechas seleccionado.
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Usuarios"
-          value={d?.users}
-          icon={<Shield className="size-5" />}
-          to="/admin/users"
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Usuarios nuevos"
-          value={d?.users_new}
-          icon={<UserRound className="size-5" />}
-          to="/admin/users"
-          tone="aqua"
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Entrenadores"
-          value={d?.coaches}
-          icon={<UserRound className="size-5" />}
-          to="/admin/users"
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Organizadores"
-          value={d?.organizers}
-          icon={<Flag className="size-5" />}
-          to="/admin/users"
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Organizaciones"
-          value={d?.organizations}
-          icon={<Flag className="size-5" />}
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Equipos"
-          value={d?.teams}
-          icon={<Users className="size-5" />}
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Atletas"
-          value={d?.athletes}
-          icon={<UserRound className="size-5" />}
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Competencias"
-          value={d?.competitions}
-          icon={<Trophy className="size-5" />}
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Inscripciones"
-          value={d?.registrations}
-          icon={<ClipboardList className="size-5" />}
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Exportaciones MDB"
-          value={d?.exports_mdb}
-          icon={<FileOutput className="size-5" />}
-          to="/admin/system"
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Exportaciones CSV"
-          value={d?.exports_csv}
-          icon={<FileOutput className="size-5" />}
-          to="/admin/system"
-          loading={stats.isLoading}
-        />
-        <StatCard
-          label="Exportaciones fallidas"
-          value={d?.exports_failed}
-          icon={<AlertTriangle className="size-5" />}
-          tone="warning"
-          to="/admin/system"
-          loading={stats.isLoading}
-        />
-      </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+      <section className="mb-6">
+        <h2 className="mb-2.5 text-xs font-bold tracking-wide text-steel-600 uppercase">
+          Cuentas
+        </h2>
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Usuarios"
+            value={d?.users}
+            icon={<Shield className="size-4" />}
+            to="/admin/users"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Usuarios nuevos"
+            value={d?.users_new}
+            icon={<UserRound className="size-4" />}
+            to="/admin/users"
+            tone="aqua"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Entrenadores"
+            value={d?.coaches}
+            icon={<UserRound className="size-4" />}
+            to="/admin/users?role=coach"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Organizadores"
+            value={d?.organizers}
+            icon={<Flag className="size-4" />}
+            to="/admin/users?role=organizer"
+            loading={stats.isLoading}
+          />
+        </div>
+      </section>
+
+      <section className="mb-6">
+        <h2 className="mb-2.5 text-xs font-bold tracking-wide text-steel-600 uppercase">
+          Operación
+        </h2>
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Organizaciones"
+            value={d?.organizations}
+            icon={<Building2 className="size-4" />}
+            to="/admin/organizations"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Equipos"
+            value={d?.teams}
+            icon={<Users className="size-4" />}
+            to="/admin/teams"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Atletas"
+            value={d?.athletes}
+            icon={<UserRound className="size-4" />}
+            to="/admin/athletes"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Competencias"
+            value={d?.competitions}
+            icon={<Trophy className="size-4" />}
+            to="/admin/competitions"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Inscripciones"
+            value={d?.registrations}
+            icon={<ClipboardList className="size-4" />}
+            to="/admin/registrations"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Exportaciones MDB"
+            value={d?.exports_mdb}
+            icon={<FileOutput className="size-4" />}
+            to="/admin/exports?format=mdb_meet_manager"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Exportaciones CSV"
+            value={d?.exports_csv}
+            icon={<FileOutput className="size-4" />}
+            to="/admin/exports?format=csv_generic"
+            loading={stats.isLoading}
+          />
+          <StatCard
+            label="Exportaciones fallidas"
+            value={d?.exports_failed}
+            icon={<AlertTriangle className="size-4" />}
+            tone="warning"
+            to="/admin/exports?status=failed"
+            loading={stats.isLoading}
+          />
+        </div>
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Card>
           <CardHeader
             title="Actividad en el periodo"
@@ -217,7 +233,7 @@ export function AdminDashboardPage() {
         <Card>
           <CardHeader
             title="Actividad reciente"
-            description="Últimas operaciones registradas en la plataforma."
+            description="Últimas operaciones registradas."
             action={
               <Link to="/admin/audit" className="text-xs font-semibold text-ocean hover:underline">
                 Ver todo

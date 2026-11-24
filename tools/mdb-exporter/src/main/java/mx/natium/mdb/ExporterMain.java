@@ -102,12 +102,26 @@ public final class ExporterMain {
   }
 
   private static void handleHealth(HttpExchange exchange) throws IOException {
+    addPublicCors(exchange);
+    if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+      exchange.sendResponseHeaders(204, -1);
+      exchange.close();
+      return;
+    }
     if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())
         && !"HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
       sendJson(exchange, 405, "{\"error\":\"method_not_allowed\"}");
       return;
     }
     sendJson(exchange, 200, "{\"status\":\"ok\"}");
+  }
+
+  /** CORS only for public health checks (not for authenticated generate). */
+  private static void addPublicCors(HttpExchange exchange) {
+    Headers headers = exchange.getResponseHeaders();
+    headers.set("Access-Control-Allow-Origin", "*");
+    headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   }
 
   private static void handleGenerate(

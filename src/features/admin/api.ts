@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
-import { unwrap } from '@/lib/errors'
+import { AppError, unwrap } from '@/lib/errors'
 
 export type AccountStatus = 'active' | 'suspended'
 
@@ -66,9 +66,28 @@ export interface AdminUserDetail {
   }[]
 }
 
-export interface AdminSystemStatus {
+export type HealthProbeState =
+  | 'operational'
+  | 'slow'
+  | 'starting'
+  | 'auth_error'
+  | 'unavailable'
+  | 'unchecked'
+  | 'checking'
+
+export interface HealthProbe {
+  id: string
+  label: string
+  state: HealthProbeState
+  ok: boolean
+  http_status: number | null
+  ms: number
   checked_at: string
-  supabase: { ok: boolean; detail: string }
+  detail: string
+}
+
+export interface AdminHealthResponse {
+  checked_at: string
   exports: {
     pending: number
     processing: number
@@ -81,7 +100,9 @@ export interface AdminSystemStatus {
       created_at: string
       error_report: unknown
     }[]
-  }
+  } | null
+  supabase_rpc: { ok: boolean; detail: string } | null
+  services: HealthProbe[]
 }
 
 export function useAdminDashboardStats(fromIso: string, toIso: string) {
@@ -187,44 +208,199 @@ export function useAuditLogs(entity: string, page: number, pageSize = 50) {
   })
 }
 
+async function invokeAdminHealth(): Promise<AdminHealthResponse> {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new AppError('Tu sesión expiró. Vuelve a iniciar sesión.')
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-health`
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+    },
+  })
+
+  const body = (await res.json().catch(() => ({}))) as AdminHealthResponse & { error?: string }
+  if (!res.ok) {
+    throw new AppError(body.error || 'No se pudo verificar la infraestructura.')
+  }
+  return body
+}
+
 export function useAdminSystemStatus() {
   return useQuery({
     queryKey: ['admin', 'system'],
-    refetchInterval: 60_000,
+    refetchInterval: 120_000,
+    staleTime: 60_000,
+    queryFn: invokeAdminHealth,
+  })
+}
+
+export type AdminOrgRow = {
+  id: string
+  name: string
+  slug: string
+  city: string | null
+  state: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export type AdminTeamRow = {
+  id: string
+  name: string
+  short_name: string
+  city: string | null
+  state: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export type AdminAthleteRow = {
+  id: string
+  display_id: string
+  first_name: string
+  last_name: string
+  birth_date: string
+  sex: Enums<'athlete_sex'>
+  status: Enums<'record_status'>
+  created_at: string
+  team: { id: string; name: string } | null
+}
+
+export type AdminCompetitionRow = {
+  id: string
+  name: string
+  code: string
+  status: Enums<'competition_status'>
+  start_date: string
+  end_date: string
+  city: string | null
+  created_at: string
+  organization: { id: string; name: string } | null
+}
+
+export type AdminRegistrationRow = {
+  id: string
+  folio: string | null
+  status: Enums<'registration_status'>
+  submitted_at: string | null
+  created_at: string
+  competition: { id: string; name: string } | null
+  team: { id: string; name: string } | null
+}
+
+export type AdminExportRow = {
+  id: string
+  format: string
+  status: Enums<'export_status'>
+  created_at: string
+  completed_at: string | null
+  competition: { id: string; name: string } | null
+}
+
+export function useAdminOrganizations(page: number, pageSize = 50) {
+  return useQuery({
+    queryKey: ['admin', 'organizations', page],
     queryFn: async () => {
-      const db = unwrap(await supabase.rpc('admin_system_status')) as unknown as AdminSystemStatus
-
-      const probe = async (label: string, url: string) => {
-        const t0 = performance.now()
-        try {
-          const res = await fetch(url, { method: 'GET', mode: 'cors' })
-          return {
-            label,
-            ok: res.ok,
-            ms: Math.round(performance.now() - t0),
-            detail: `${res.status}`,
-          }
-        } catch (err) {
-          return {
-            label,
-            ok: false,
-            ms: Math.round(performance.now() - t0),
-            detail: err instanceof Error ? err.message : 'error',
-          }
-        }
-      }
-
-      const [vercel, render, supabaseRest] = await Promise.all([
-        probe('Vercel', 'https://natium-weld.vercel.app/'),
-        probe('Render MDB', 'https://natium-mdb-exporter.onrender.com/health'),
-        probe(
-          'Supabase API',
-          `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/health`,
-        ),
-      ])
-
-      return { db, probes: [supabaseRest, vercel, render] }
+      const res = await supabase
+        .from('organizations')
+        .select('id, name, slug, city, state, is_active, created_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1)
+      if (res.error) throw res.error
+      return { rows: res.data as AdminOrgRow[], total: res.count ?? 0 }
     },
   })
 }
 
+export function useAdminTeams(page: number, pageSize = 50) {
+  return useQuery({
+    queryKey: ['admin', 'teams', page],
+    queryFn: async () => {
+      const res = await supabase
+        .from('teams')
+        .select('id, name, short_name, city, state, is_active, created_at', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1)
+      if (res.error) throw res.error
+      return { rows: res.data as AdminTeamRow[], total: res.count ?? 0 }
+    },
+  })
+}
+
+export function useAdminAthletes(page: number, pageSize = 50) {
+  return useQuery({
+    queryKey: ['admin', 'athletes', page],
+    queryFn: async () => {
+      const res = await supabase
+        .from('athletes')
+        .select(
+          'id, display_id, first_name, last_name, birth_date, sex, status, created_at, team:teams(id, name)',
+          { count: 'exact' },
+        )
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1)
+      if (res.error) throw res.error
+      return { rows: res.data as unknown as AdminAthleteRow[], total: res.count ?? 0 }
+    },
+  })
+}
+
+export function useAdminCompetitions(page: number, pageSize = 50) {
+  return useQuery({
+    queryKey: ['admin', 'competitions', page],
+    queryFn: async () => {
+      const res = await supabase
+        .from('competitions')
+        .select(
+          'id, name, code, status, start_date, end_date, city, created_at, organization:organizations(id, name)',
+          { count: 'exact' },
+        )
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1)
+      if (res.error) throw res.error
+      return { rows: res.data as unknown as AdminCompetitionRow[], total: res.count ?? 0 }
+    },
+  })
+}
+
+export function useAdminRegistrations(page: number, pageSize = 50) {
+  return useQuery({
+    queryKey: ['admin', 'registrations', page],
+    queryFn: async () => {
+      const res = await supabase
+        .from('registrations')
+        .select(
+          'id, folio, status, submitted_at, created_at, competition:competitions(id, name), team:teams(id, name)',
+          { count: 'exact' },
+        )
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1)
+      if (res.error) throw res.error
+      return { rows: res.data as unknown as AdminRegistrationRow[], total: res.count ?? 0 }
+    },
+  })
+}
+
+export function useAdminExports(page: number, pageSize = 50, format?: string) {
+  return useQuery({
+    queryKey: ['admin', 'exports', page, format ?? ''],
+    queryFn: async () => {
+      let q = supabase
+        .from('export_jobs')
+        .select(
+          'id, format, status, created_at, completed_at, competition:competitions(id, name)',
+          { count: 'exact' },
+        )
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1)
+      if (format) q = q.eq('format', format)
+      const res = await q
+      if (res.error) throw res.error
+      return { rows: res.data as unknown as AdminExportRow[], total: res.count ?? 0 }
+    },
+  })
+}

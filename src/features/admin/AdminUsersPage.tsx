@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthProvider'
 import {
   Badge,
@@ -30,8 +30,14 @@ import {
 export function AdminUsersPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const initialRole = params.get('role')
   const [search, setSearch] = useState('')
-  const [role, setRole] = useState<Enums<'app_role'> | ''>('')
+  const [role, setRole] = useState<Enums<'app_role'> | ''>(
+    initialRole === 'coach' || initialRole === 'organizer' || initialRole === 'platform_admin'
+      ? initialRole
+      : '',
+  )
   const [status, setStatus] = useState<AccountStatus | ''>('')
   const [page, setPage] = useState(1)
   const [pendingStatus, setPendingStatus] = useState<{
@@ -204,8 +210,15 @@ export function AdminUsersPage() {
         loading={users.isLoading}
         onRowClick={(p) => navigate(`/admin/users/${p.id}`)}
         emptyState={
-          <div className="px-5 py-10 text-center text-sm text-steel-600">
-            No hay usuarios que coincidan con los filtros.
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm font-semibold text-navy">No hay usuarios</p>
+            <p className="mt-1 text-sm text-steel-600">
+              {role === 'coach'
+                ? 'Todavía no hay entrenadores registrados.'
+                : role === 'organizer'
+                  ? 'Todavía no hay organizadores registrados.'
+                  : 'No hay usuarios que coincidan con los filtros.'}
+            </p>
           </div>
         }
       />

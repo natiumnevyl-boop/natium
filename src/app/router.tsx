@@ -17,6 +17,12 @@ import { AdminUsersPage } from '@/features/admin/AdminUsersPage'
 import { AdminUserDetailPage } from '@/features/admin/AdminUserDetailPage'
 import { AdminAuditPage } from '@/features/admin/AdminAuditPage'
 import { AdminSystemPage } from '@/features/admin/AdminSystemPage'
+import { AdminOrganizationsPage } from '@/features/admin/AdminOrganizationsPage'
+import { AdminTeamsPage } from '@/features/admin/AdminTeamsPage'
+import { AdminAthletesPage } from '@/features/admin/AdminAthletesPage'
+import { AdminCompetitionsPage } from '@/features/admin/AdminCompetitionsPage'
+import { AdminRegistrationsPage } from '@/features/admin/AdminRegistrationsPage'
+import { AdminExportsPage } from '@/features/admin/AdminExportsPage'
 import { TeamsPage } from '@/features/teams/pages/TeamsPage'
 import { TeamDetailPage } from '@/features/teams/pages/TeamDetailPage'
 import { AthletesPage } from '@/features/athletes/pages/AthletesPage'
@@ -105,6 +111,12 @@ export const router = createBrowserRouter([
               { path: '/admin', element: <AdminDashboardPage /> },
               { path: '/admin/users', element: <AdminUsersPage /> },
               { path: '/admin/users/:userId', element: <AdminUserDetailPage /> },
+              { path: '/admin/organizations', element: <AdminOrganizationsPage /> },
+              { path: '/admin/teams', element: <AdminTeamsPage /> },
+              { path: '/admin/athletes', element: <AdminAthletesPage /> },
+              { path: '/admin/competitions', element: <AdminCompetitionsPage /> },
+              { path: '/admin/registrations', element: <AdminRegistrationsPage /> },
+              { path: '/admin/exports', element: <AdminExportsPage /> },
               { path: '/admin/audit', element: <AdminAuditPage /> },
               { path: '/admin/system', element: <AdminSystemPage /> },
             ],
