@@ -18,7 +18,11 @@ Typography: Manrope (Google Fonts), tabular numerals via `.tnum` for times and m
 
 ## Components (`src/shared/ui`)
 
-Button (primary/secondary/ghost/danger/aqua; loading), Input/Textarea/Select/Checkbox, Field (label + error + a11y wiring), Card/CardHeader/CardBody, Badge (tones), DataTable (responsive: `hideOnMobile`, skeleton rows, empty slot, row click), Modal/ConfirmDialog (native `<dialog>`), EmptyState, PageHeader (breadcrumbs, actions), StatCard, Alert, SearchInput, Pagination, Tabs, Avatar, Skeleton, TimeInput, Toaster (sonner), Logo, status pages (Forbidden/NotFound/ErrorState), FullPageLoader.
+Button (primary/secondary/ghost/danger/aqua; loading), Input/Textarea/Select/Checkbox, Field (label + error + a11y wiring), Card/CardHeader/CardBody, Badge (tones), DataTable (responsive: `hideOnMobile`, skeleton rows, empty slot, row click), Modal/ConfirmDialog (native `<dialog>`), EmptyState, PageHeader (breadcrumbs, actions), StatCard, Alert, SearchInput, Pagination, Tabs, Avatar (initials or `src`), Skeleton, TimeInput, Toaster (sonner), Logo, status pages (Forbidden/NotFound/ErrorState), FullPageLoader.
+
+## Media (`src/shared/media`)
+
+Reusable `ImageUpload` for logos (1:1 contain), avatars/photos (3:4), covers (16:9). Compresses rasters client-side; preserves SVG for logos. Institutional buckets (`org-assets`, `competition-assets`) are public; `team-logos`, `athlete-photos`, and `profile-avatars` stay private with signed URLs.
 
 ## Motion
 

@@ -27,6 +27,7 @@ import {
 } from '../api'
 import { TeamForm } from '../components/TeamForm'
 import { useAthletes } from '@/features/athletes/api'
+import { ImageUpload } from '@/shared/media'
 
 type Tab = 'general' | 'members' | 'athletes'
 
@@ -87,6 +88,28 @@ export function TeamDetailPage() {
       />
 
       {tab === 'general' && (
+        <div className="grid gap-5 lg:grid-cols-[240px_1fr]">
+          <Card className="h-fit">
+            <CardHeader title="Escudo / logo" description="Privado al equipo · 1:1" />
+            <CardBody>
+              <ImageUpload
+                kind="logo"
+                bucket="team-logos"
+                folderId={t.id}
+                path={t.logo_path}
+                disabled={!isOwner}
+                hint="PNG o SVG · no se publica abiertamente"
+                onChange={async ({ path }) => {
+                  try {
+                    await update.mutateAsync({ logo_path: path })
+                    toast.success(path ? 'Logo actualizado' : 'Logo eliminado')
+                  } catch (err) {
+                    toast.error(toAppError(err).message)
+                  }
+                }}
+              />
+            </CardBody>
+          </Card>
         <Card>
           <CardHeader
             title="Información general"
@@ -141,6 +164,7 @@ export function TeamDetailPage() {
             )}
           </CardBody>
         </Card>
+        </div>
       )}
 
       {tab === 'members' && (

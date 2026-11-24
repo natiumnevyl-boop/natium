@@ -20,6 +20,7 @@ import {
   poolCourseLabel,
   sexLabel,
 } from '@/shared/utils/labels'
+import { publicObjectUrl } from '@/shared/media'
 import {
   publicCompetitionUrl,
   registrationWindowFromDates,
@@ -100,7 +101,20 @@ export function PublicCompetitionSharePage() {
 
       {c.cover_image_url && (
         <div>
-          <p className="text-xs font-semibold tracking-wide text-ocean uppercase">{org.name}</p>
+          <div className="flex items-center gap-3">
+            {(c.logo_path || org.logo_path) && (
+              <img
+                src={
+                  c.logo_path
+                    ? publicObjectUrl('competition-assets', c.logo_path)
+                    : publicObjectUrl('org-assets', org.logo_path!)
+                }
+                alt=""
+                className="size-12 rounded-md border border-ice-200 bg-white object-contain p-1"
+              />
+            )}
+            <p className="text-xs font-semibold tracking-wide text-ocean uppercase">{org.name}</p>
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
               {c.name}

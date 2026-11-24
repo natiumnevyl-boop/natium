@@ -241,10 +241,13 @@ export function useAdminSystemStatus() {
 export type AdminOrgRow = {
   id: string
   name: string
+  trade_name: string | null
   slug: string
   city: string | null
   state: string | null
   is_active: boolean
+  logo_path: string | null
+  cover_path: string | null
   created_at: string
 }
 
@@ -255,6 +258,7 @@ export type AdminTeamRow = {
   city: string | null
   state: string | null
   is_active: boolean
+  logo_path: string | null
   created_at: string
 }
 
@@ -278,6 +282,8 @@ export type AdminCompetitionRow = {
   start_date: string
   end_date: string
   city: string | null
+  cover_image_url: string | null
+  logo_path: string | null
   created_at: string
   organization: { id: string; name: string } | null
 }
@@ -307,7 +313,10 @@ export function useAdminOrganizations(page: number, pageSize = 50) {
     queryFn: async () => {
       const res = await supabase
         .from('organizations')
-        .select('id, name, slug, city, state, is_active, created_at', { count: 'exact' })
+        .select(
+          'id, name, trade_name, slug, city, state, is_active, logo_path, cover_path, created_at',
+          { count: 'exact' },
+        )
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1)
       if (res.error) throw res.error
@@ -322,7 +331,9 @@ export function useAdminTeams(page: number, pageSize = 50) {
     queryFn: async () => {
       const res = await supabase
         .from('teams')
-        .select('id, name, short_name, city, state, is_active, created_at', { count: 'exact' })
+        .select('id, name, short_name, city, state, is_active, logo_path, created_at', {
+          count: 'exact',
+        })
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1)
       if (res.error) throw res.error
@@ -356,7 +367,7 @@ export function useAdminCompetitions(page: number, pageSize = 50) {
       const res = await supabase
         .from('competitions')
         .select(
-          'id, name, code, status, start_date, end_date, city, created_at, organization:organizations(id, name)',
+          'id, name, code, status, start_date, end_date, city, cover_image_url, logo_path, created_at, organization:organizations(id, name)',
           { count: 'exact' },
         )
         .order('created_at', { ascending: false })

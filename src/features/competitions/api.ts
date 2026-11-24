@@ -105,17 +105,33 @@ export function useMyOrganization() {
   })
 }
 
+const optionalHttps = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .or(z.literal(''))
+  .refine((v) => !v || /^https?:\/\//i.test(v), 'Usa una URL http(s)')
+
 export const organizationSchema = z.object({
   name: z.string().trim().min(3).max(120),
+  trade_name: z.string().trim().max(160).optional().or(z.literal('')),
   slug: z
     .string()
     .trim()
     .toLowerCase()
     .regex(/^[a-z0-9-]{3,40}$/, 'Solo minúsculas, números y guiones'),
+  description: z.string().trim().max(2000).optional().or(z.literal('')),
   contact_email: z.email('Correo inválido').optional().or(z.literal('')),
+  contact_phone: z.string().trim().max(30).optional().or(z.literal('')),
+  website_url: optionalHttps,
   city: z.string().trim().max(80).optional().or(z.literal('')),
   state: z.string().trim().max(80).optional().or(z.literal('')),
   country: z.string().trim().length(2).toUpperCase().default('MX'),
+  social_facebook: optionalHttps,
+  social_instagram: optionalHttps,
+  social_x: optionalHttps,
+  social_youtube: optionalHttps,
 })
 export type OrganizationInput = z.input<typeof organizationSchema>
 
@@ -123,13 +139,37 @@ export function useSaveOrganization() {
   const qc = useQueryClient()
   const { user } = useAuth()
   return useMutation({
-    mutationFn: async ({ id, ...input }: OrganizationInput & { id?: string }) => {
+    mutationFn: async ({
+      id,
+      logo_path,
+      cover_path,
+      ...input
+    }: OrganizationInput & {
+      id?: string
+      logo_path?: string | null
+      cover_path?: string | null
+    }) => {
       const v = organizationSchema.parse(input)
+      const social_links = {
+        facebook: v.social_facebook || undefined,
+        instagram: v.social_instagram || undefined,
+        x: v.social_x || undefined,
+        youtube: v.social_youtube || undefined,
+      }
       const row = {
-        ...v,
+        name: v.name,
+        trade_name: v.trade_name || null,
+        slug: v.slug,
+        description: v.description || null,
         contact_email: v.contact_email || null,
+        contact_phone: v.contact_phone || null,
+        website_url: v.website_url || null,
         city: v.city || null,
         state: v.state || null,
+        country: v.country,
+        social_links,
+        ...(logo_path !== undefined ? { logo_path } : {}),
+        ...(cover_path !== undefined ? { cover_path } : {}),
       }
       if (id)
         return unwrap(
@@ -268,9 +308,20 @@ export function useSaveCompetition() {
     mutationFn: async ({
       id,
       organization_id,
+      logo_path,
+      cover_path,
       ...input
-    }: CompetitionInput & { id?: string; organization_id: string }) => {
-      const payload = toPayload(competitionSchema.parse(input))
+    }: CompetitionInput & {
+      id?: string
+      organization_id: string
+      logo_path?: string | null
+      cover_path?: string | null
+    }) => {
+      const payload = {
+        ...toPayload(competitionSchema.parse(input)),
+        ...(logo_path !== undefined ? { logo_path } : {}),
+        ...(cover_path !== undefined ? { cover_path } : {}),
+      }
       if (id)
         return unwrap(
           await supabase.from('competitions').update(payload).eq('id', id).select().single(),

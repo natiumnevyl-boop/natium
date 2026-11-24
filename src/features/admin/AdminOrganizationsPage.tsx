@@ -4,6 +4,7 @@ import { Badge, DataTable, EmptyState, PageHeader, Pagination, type Column } fro
 import { ErrorState } from '@/shared/ui/StatusPages'
 import { toAppError } from '@/lib/errors'
 import { fmtDateTime } from '@/shared/utils/dates'
+import { publicObjectUrl } from '@/shared/media'
 import { useAdminOrganizations, type AdminOrgRow } from './api'
 
 export function AdminOrganizationsPage() {
@@ -15,9 +16,26 @@ export function AdminOrganizationsPage() {
       key: 'name',
       header: 'Organización',
       cell: (r) => (
-        <div>
-          <p className="font-semibold">{r.name}</p>
-          <p className="text-xs text-steel-600">{r.slug}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-ice-200 bg-ice">
+            {r.logo_path ? (
+              <img
+                src={publicObjectUrl('org-assets', r.logo_path)}
+                alt=""
+                className="size-full object-contain p-0.5"
+              />
+            ) : (
+              <Building2 className="size-4 text-steel-600" />
+            )}
+          </div>
+          <div>
+            <p className="font-semibold">{r.trade_name || r.name}</p>
+            <p className="text-xs text-steel-600">
+              {r.trade_name ? r.name + ' · ' : ''}
+              {r.slug}
+              {r.cover_path ? ' · portada' : ''}
+            </p>
+          </div>
         </div>
       ),
     },

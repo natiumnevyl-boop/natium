@@ -13,6 +13,7 @@ export const teamSchema = z.object({
   name: z.string().trim().min(2, 'Mínimo 2 caracteres').max(120),
   short_name: z.string().trim().min(1, 'Requerido').max(20, 'Máximo 20 caracteres'),
   code: z.string().trim().max(12).optional().or(z.literal('')),
+  description: z.string().trim().max(1000).optional().or(z.literal('')),
   city: z.string().trim().max(80).optional().or(z.literal('')),
   state: z.string().trim().max(80).optional().or(z.literal('')),
   country: z.string().trim().length(2, 'Código de 2 letras').toUpperCase().default('MX'),
@@ -142,13 +143,19 @@ export function useCreateTeam() {
 export function useUpdateTeam(teamId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (input: Partial<TeamInput> & { is_active?: boolean }) => {
-      const { is_active, ...rest } = input
+    mutationFn: async (
+      input: Partial<TeamInput> & { is_active?: boolean; logo_path?: string | null },
+    ) => {
+      const { is_active, logo_path, ...rest } = input
       const values = nullify(teamSchema.partial().parse(rest))
       return unwrap(
         await supabase
           .from('teams')
-          .update({ ...values, ...(is_active !== undefined ? { is_active } : {}) })
+          .update({
+            ...values,
+            ...(is_active !== undefined ? { is_active } : {}),
+            ...(logo_path !== undefined ? { logo_path } : {}),
+          })
           .eq('id', teamId)
           .select()
           .single(),

@@ -147,8 +147,12 @@ export function useCreateAthlete() {
 export function useUpdateAthlete(id: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (input: Partial<AthleteInput> & { status?: Enums<'record_status'> }) =>
-      unwrap(await supabase.from('athletes').update(input).eq('id', id).select().single()),
+    mutationFn: async (
+      input: Partial<AthleteInput> & {
+        status?: Enums<'record_status'>
+        photo_path?: string | null
+      },
+    ) => unwrap(await supabase.from('athletes').update(input).eq('id', id).select().single()),
     onSuccess: () => qc.invalidateQueries({ queryKey: athleteKeys.all }),
   })
 }

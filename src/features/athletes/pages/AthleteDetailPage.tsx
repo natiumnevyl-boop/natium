@@ -41,6 +41,7 @@ import {
   useUpdateAthlete,
 } from '../api'
 import { AthleteForm } from '../components/AthleteForm'
+import { ImageUpload } from '@/shared/media'
 
 type Tab = 'profile' | 'history' | 'marks'
 
@@ -118,25 +119,50 @@ export function AthleteDetailPage() {
       />
 
       {tab === 'profile' && (
-        <Card>
-          <CardHeader
-            title="Datos del atleta"
-            description={`Creado ${fmtDate(a.created_at)} · Actualizado ${fmtDate(a.updated_at)}`}
-          />
-          <CardBody>
-            <AthleteForm
-              initial={a}
-              onSubmit={async (values) => {
-                try {
-                  await update.mutateAsync(values)
-                  toast.success('Expediente actualizado')
-                } catch (err) {
-                  toast.error(toAppError(err).message)
-                }
-              }}
+        <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+          <Card className="h-fit">
+            <CardHeader
+              title="Fotografía"
+              description="Privada del equipo. No se publica en páginas abiertas."
             />
-          </CardBody>
-        </Card>
+            <CardBody>
+              <ImageUpload
+                kind="photo"
+                bucket="athlete-photos"
+                folderId={a.team_id}
+                path={a.photo_path}
+                hint="3:4 · solo miembros del equipo"
+                onChange={async ({ path }) => {
+                  try {
+                    await update.mutateAsync({ photo_path: path })
+                    toast.success(path ? 'Fotografía actualizada' : 'Fotografía eliminada')
+                  } catch (err) {
+                    toast.error(toAppError(err).message)
+                  }
+                }}
+              />
+            </CardBody>
+          </Card>
+          <Card>
+            <CardHeader
+              title="Datos del atleta"
+              description={`Creado ${fmtDate(a.created_at)} · Actualizado ${fmtDate(a.updated_at)} · Para exportación MDB se usan nombre, nacimiento y sexo.`}
+            />
+            <CardBody>
+              <AthleteForm
+                initial={a}
+                onSubmit={async (values) => {
+                  try {
+                    await update.mutateAsync(values)
+                    toast.success('Expediente actualizado')
+                  } catch (err) {
+                    toast.error(toAppError(err).message)
+                  }
+                }}
+              />
+            </CardBody>
+          </Card>
+        </div>
       )}
 
       {tab === 'history' && (

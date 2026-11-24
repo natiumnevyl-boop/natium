@@ -428,12 +428,14 @@ export type Database = {
           city: string | null
           code: string
           cover_image_url: string | null
+          cover_path: string | null
           created_at: string
           created_by: string
           description: string | null
           end_date: string
           folio_seq: number
           id: string
+          logo_path: string | null
           max_entries_per_athlete: number | null
           name: string
           organization_id: string
@@ -454,12 +456,14 @@ export type Database = {
           city?: string | null
           code: string
           cover_image_url?: string | null
+          cover_path?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           end_date: string
           folio_seq?: number
           id?: string
+          logo_path?: string | null
           max_entries_per_athlete?: number | null
           name: string
           organization_id: string
@@ -479,12 +483,14 @@ export type Database = {
           city?: string | null
           code?: string
           cover_image_url?: string | null
+          cover_path?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           end_date?: string
           folio_seq?: number
           id?: string
+          logo_path?: string | null
           max_entries_per_athlete?: number | null
           name?: string
           organization_id?: string
@@ -765,42 +771,63 @@ export type Database = {
         Row: {
           city: string | null
           contact_email: string | null
+          contact_phone: string | null
           country: string
+          cover_path: string | null
           created_at: string
           created_by: string
+          description: string | null
           id: string
           is_active: boolean
+          logo_path: string | null
           name: string
           slug: string
+          social_links: Json
           state: string | null
+          trade_name: string | null
           updated_at: string
+          website_url: string | null
         }
         ComputedFields: never
         Insert: {
           city?: string | null
           contact_email?: string | null
+          contact_phone?: string | null
           country?: string
+          cover_path?: string | null
           created_at?: string
           created_by: string
+          description?: string | null
           id?: string
           is_active?: boolean
+          logo_path?: string | null
           name: string
           slug: string
+          social_links?: Json
           state?: string | null
+          trade_name?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
           city?: string | null
           contact_email?: string | null
+          contact_phone?: string | null
           country?: string
+          cover_path?: string | null
           created_at?: string
           created_by?: string
+          description?: string | null
           id?: string
           is_active?: boolean
+          logo_path?: string | null
           name?: string
           slug?: string
+          social_links?: Json
           state?: string | null
+          trade_name?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -816,35 +843,41 @@ export type Database = {
         Row: {
           account_status: Database['public']['Enums']['account_status']
           avatar_path: string | null
+          bio: string | null
           created_at: string
           email: string
           full_name: string
           id: string
           phone: string | null
           role: Database['public']['Enums']['app_role']
+          specialty: string | null
           updated_at: string
         }
         ComputedFields: never
         Insert: {
           account_status?: Database['public']['Enums']['account_status']
           avatar_path?: string | null
+          bio?: string | null
           created_at?: string
           email: string
           full_name?: string
           id: string
           phone?: string | null
           role?: Database['public']['Enums']['app_role']
+          specialty?: string | null
           updated_at?: string
         }
         Update: {
           account_status?: Database['public']['Enums']['account_status']
           avatar_path?: string | null
+          bio?: string | null
           created_at?: string
           email?: string
           full_name?: string
           id?: string
           phone?: string | null
           role?: Database['public']['Enums']['app_role']
+          specialty?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1133,6 +1166,7 @@ export type Database = {
           country: string
           created_at: string
           created_by: string
+          description: string | null
           id: string
           is_active: boolean
           logo_path: string | null
@@ -1152,6 +1186,7 @@ export type Database = {
           country?: string
           created_at?: string
           created_by: string
+          description?: string | null
           id?: string
           is_active?: boolean
           logo_path?: string | null
@@ -1170,6 +1205,7 @@ export type Database = {
           country?: string
           created_at?: string
           created_by?: string
+          description?: string | null
           id?: string
           is_active?: boolean
           logo_path?: string | null

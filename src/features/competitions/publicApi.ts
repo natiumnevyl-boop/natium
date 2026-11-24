@@ -22,11 +22,16 @@ export interface PublicCompetitionPayload {
     allow_no_time: boolean
     status: Enums<'competition_status'>
     cover_image_url: string | null
+    logo_path: string | null
   }
   organization: {
     name: string
+    official_name?: string
     city: string | null
     slug: string
+    website_url?: string | null
+    logo_path?: string | null
+    social_links?: Record<string, string>
   }
   categories: {
     id: string

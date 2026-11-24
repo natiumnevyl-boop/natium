@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Button, Field, Input } from '@/shared/ui'
+import { Button, Field, Input, Textarea } from '@/shared/ui'
 import { teamSchema, type TeamInput, type Team } from '../api'
 
 interface TeamFormProps {
@@ -17,6 +17,7 @@ export function TeamForm({ initial, onSubmit, submitLabel = 'Guardar', onCancel 
       name: initial?.name ?? '',
       short_name: initial?.short_name ?? '',
       code: initial?.code ?? '',
+      description: initial?.description ?? '',
       city: initial?.city ?? '',
       state: initial?.state ?? '',
       country: initial?.country ?? 'MX',
@@ -41,6 +42,14 @@ export function TeamForm({ initial, onSubmit, submitLabel = 'Guardar', onCancel 
       <Field label="Clave / código" error={e.code?.message} hint="Si el organizador lo requiere">
         {(p) => <Input {...p} {...register('code')} placeholder="DELF" className="uppercase" />}
       </Field>
+      <Field
+        label="Descripción"
+        error={e.description?.message}
+        className="sm:col-span-2"
+        hint="Opcional"
+      >
+        {(p) => <Textarea {...p} rows={3} {...register('description')} />}
+      </Field>
       <Field label="Ciudad" error={e.city?.message}>
         {(p) => <Input {...p} {...register('city')} />}
       </Field>
@@ -50,7 +59,7 @@ export function TeamForm({ initial, onSubmit, submitLabel = 'Guardar', onCancel 
       <Field label="País" error={e.country?.message} hint="Código ISO de 2 letras">
         {(p) => <Input {...p} {...register('country')} maxLength={2} className="uppercase" />}
       </Field>
-      <Field label="Responsable" error={e.contact_name?.message}>
+      <Field label="Entrenador responsable" error={e.contact_name?.message}>
         {(p) => <Input {...p} {...register('contact_name')} />}
       </Field>
       <Field label="Correo de contacto" error={e.contact_email?.message}>
