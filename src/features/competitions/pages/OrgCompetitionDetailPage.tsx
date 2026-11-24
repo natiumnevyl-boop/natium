@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Share2, Trash2 } from 'lucide-react'
 import {
   Alert,
   Badge,
@@ -53,6 +53,7 @@ import {
   type Category,
   type CategoryInput,
 } from '../api'
+import { publicCompetitionUrl, whatsappShareUrl } from '../publicApi'
 
 type Tab = 'general' | 'categories' | 'events' | 'registrations' | 'export'
 
@@ -92,6 +93,27 @@ export function OrgCompetitionDetailPage() {
         description={`${fmtDate(c.start_date)}${c.end_date !== c.start_date ? ` – ${fmtDate(c.end_date)}` : ''} · ${[c.venue, c.city].filter(Boolean).join(', ') || 'Sin sede'} · ${poolCourseLabel[c.pool_course]}`}
         actions={
           <>
+            {c.status !== 'draft' && (
+              <Button
+                variant="secondary"
+                leftIcon={<Share2 className="size-4" />}
+                onClick={async () => {
+                  const url = publicCompetitionUrl(c.id)
+                  try {
+                    await navigator.clipboard.writeText(url)
+                    toast.success('Enlace público copiado')
+                  } catch {
+                    window.open(
+                      whatsappShareUrl(`${c.name}\n${url}`),
+                      '_blank',
+                      'noopener,noreferrer',
+                    )
+                  }
+                }}
+              >
+                Compartir
+              </Button>
+            )}
             <Button
               variant="secondary"
               leftIcon={<Pencil className="size-4" />}

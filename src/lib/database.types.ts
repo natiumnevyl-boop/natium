@@ -427,6 +427,7 @@ export type Database = {
           allow_no_time: boolean
           city: string | null
           code: string
+          cover_image_url: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -452,6 +453,7 @@ export type Database = {
           allow_no_time?: boolean
           city?: string | null
           code: string
+          cover_image_url?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -476,6 +478,7 @@ export type Database = {
           allow_no_time?: boolean
           city?: string | null
           code?: string
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -1312,6 +1315,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_public_competition: {
+        Args: { p_competition_id: string }
+        Returns: Json
       }
       get_competition_export_snapshot: {
         Args: { p_competition_id: string; p_team_id?: string | null }

@@ -92,13 +92,19 @@ export function AppShell() {
   const footer = (
     <div className="mt-auto border-t border-white/10 pt-4">
       <div className="flex items-center gap-3 px-2">
-        <Avatar name={profile?.full_name || profile?.email || '?'} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white">
-            {profile?.full_name || profile?.email}
-          </p>
-          <p className="truncate text-xs text-steel">{profile ? roleLabel[profile.role] : ''}</p>
-        </div>
+        <NavLink
+          to="/account"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-md px-1 py-1 transition-colors hover:bg-white/5"
+          title="Mi perfil"
+        >
+          <Avatar name={profile?.full_name || profile?.email || '?'} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-white">
+              {profile?.full_name || profile?.email}
+            </p>
+            <p className="truncate text-xs text-steel">{profile ? roleLabel[profile.role] : ''}</p>
+          </div>
+        </NavLink>
         <button
           type="button"
           onClick={async () => {
@@ -162,7 +168,9 @@ export function AppShell() {
             <Menu className="size-5" />
           </button>
           <Logo compact />
-          <Avatar name={profile?.full_name || profile?.email || '?'} size="sm" />
+          <NavLink to="/account" aria-label="Mi perfil">
+            <Avatar name={profile?.full_name || profile?.email || '?'} size="sm" />
+          </NavLink>
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div key={location.pathname} className="animate-fade-in">

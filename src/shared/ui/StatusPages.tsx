@@ -35,11 +35,19 @@ export function NotFoundPage() {
   )
 }
 
-export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
+export function ErrorState({
+  title,
+  message,
+  onRetry,
+}: {
+  title?: string
+  message?: string
+  onRetry?: () => void
+}) {
   return (
     <EmptyState
       icon={<WifiOff className="size-6" />}
-      title="No se pudo cargar la información"
+      title={title ?? 'No se pudo cargar la información'}
       description={message ?? 'Intenta de nuevo en unos segundos.'}
       action={
         onRetry && (

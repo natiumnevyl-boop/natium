@@ -68,6 +68,7 @@ export function CompetitionFormPage() {
       max_entries_per_athlete: c.max_entries_per_athlete ?? '',
       allow_no_time: c.allow_no_time,
       requirements: c.requirements ?? '',
+      cover_image_url: c.cover_image_url ?? '',
     })
   }, [existing.data, reset])
 
@@ -138,6 +139,21 @@ export function CompetitionFormPage() {
               className="sm:col-span-2"
             >
               {(p) => <Textarea {...p} rows={4} {...register('description')} />}
+            </Field>
+            <Field
+              label="Imagen de portada (URL)"
+              error={e.cover_image_url?.message}
+              hint="Opcional. HTTPS público para la página compartible."
+              className="sm:col-span-2"
+            >
+              {(p) => (
+                <Input
+                  {...p}
+                  type="url"
+                  placeholder="https://…"
+                  {...register('cover_image_url')}
+                />
+              )}
             </Field>
           </CardBody>
         </Card>

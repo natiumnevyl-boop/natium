@@ -50,22 +50,48 @@ export function useAdminCounts() {
   return useQuery({
     queryKey: ['admin', 'counts'],
     queryFn: async () => {
-      const [p, o, t, a, c, r] = await Promise.all([
+      const [p, coaches, organizers, o, t, a, c, r, failedExports] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'coach'),
+        supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'organizer'),
         supabase.from('organizations').select('*', { count: 'exact', head: true }),
         supabase.from('teams').select('*', { count: 'exact', head: true }),
         supabase.from('athletes').select('*', { count: 'exact', head: true }),
         supabase.from('competitions').select('*', { count: 'exact', head: true }),
         supabase.from('registrations').select('*', { count: 'exact', head: true }),
+        supabase
+          .from('export_jobs')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'failed'),
       ])
       return {
         profiles: p.count ?? 0,
+        coaches: coaches.count ?? 0,
+        organizers: organizers.count ?? 0,
         organizations: o.count ?? 0,
         teams: t.count ?? 0,
         athletes: a.count ?? 0,
         competitions: c.count ?? 0,
         registrations: r.count ?? 0,
+        failed_exports: failedExports.count ?? 0,
       }
     },
+  })
+}
+
+export function useRecentExportJobs() {
+  return useQuery({
+    queryKey: ['admin', 'export_jobs', 'recent'],
+    queryFn: async () =>
+      unwrap(
+        await supabase
+          .from('export_jobs')
+          .select('id, status, file_name, format, created_at, competition_id, competition:competitions(name)')
+          .order('created_at', { ascending: false })
+          .limit(12),
+      ),
   })
 }

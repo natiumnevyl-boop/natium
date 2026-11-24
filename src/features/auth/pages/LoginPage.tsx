@@ -1,14 +1,22 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Alert, Button, Field, Input } from '@/shared/ui'
 import { loginSchema, type LoginInput } from '../schemas'
 
+function safeInternalPath(value: string | null | undefined) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return null
+  return value
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation() as { state?: { from?: string } }
+  const [params] = useSearchParams()
+  const from =
+    safeInternalPath(params.get('from')) ?? safeInternalPath(location.state?.from) ?? '/'
   const [error, setError] = useState<string | null>(null)
   const { register, handleSubmit, formState } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -25,8 +33,9 @@ export function LoginPage() {
       )
       return
     }
-    navigate(location.state?.from ?? '/', { replace: true })
+    navigate(from, { replace: true })
   })
+
 
   return (
     <div>
@@ -60,7 +69,10 @@ export function LoginPage() {
       </form>
       <p className="mt-6 text-center text-sm text-steel-600">
         ¿Aún no tienes cuenta?{' '}
-        <Link to="/register" className="font-semibold text-ocean hover:underline">
+        <Link
+          to={from !== '/' ? `/register?from=${encodeURIComponent(from)}` : '/register'}
+          className="font-semibold text-ocean hover:underline"
+        >
           Crear cuenta
         </Link>
       </p>

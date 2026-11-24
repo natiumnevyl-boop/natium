@@ -14,6 +14,7 @@ import {
   type Column,
 } from '@/shared/ui'
 import { toast } from '@/shared/ui/Toaster'
+import { ErrorState } from '@/shared/ui/StatusPages'
 import { toAppError } from '@/lib/errors'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { ageOn, fmtDate } from '@/shared/utils/dates'
@@ -110,6 +111,14 @@ export function AthletesPage() {
           </Button>
         }
       />
+      {athletes.isError && (
+        <div className="mb-4">
+          <ErrorState
+            message={toAppError(athletes.error).message}
+            onRetry={() => athletes.refetch()}
+          />
+        </div>
+      )}
       <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_200px_160px]">
         <SearchInput
           value={search}

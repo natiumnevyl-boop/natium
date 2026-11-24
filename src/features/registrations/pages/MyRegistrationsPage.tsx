@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { ClipboardList } from 'lucide-react'
 import { Badge, Button, DataTable, EmptyState, PageHeader, type Column } from '@/shared/ui'
+import { ErrorState } from '@/shared/ui/StatusPages'
+import { toAppError } from '@/lib/errors'
 import { fmtDate, fmtDateTime } from '@/shared/utils/dates'
 import { registrationStatusLabel, registrationStatusTone } from '@/shared/utils/labels'
 import { useMyRegistrations, type RegistrationListItem } from '../api'
@@ -65,6 +67,11 @@ export function MyRegistrationsPage() {
         description="Borradores, envíos y su estado de revisión."
         actions={<Button onClick={() => navigate('/competitions')}>Inscribir nadadores</Button>}
       />
+      {regs.isError && (
+        <div className="mb-4">
+          <ErrorState message={toAppError(regs.error).message} onRetry={() => regs.refetch()} />
+        </div>
+      )}
       <DataTable
         columns={columns}
         rows={regs.data}

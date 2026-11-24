@@ -189,12 +189,18 @@ export function RegistrationDetailPage() {
               {r.athletes.map((ra) => (
                 <li key={ra.id} className="px-5 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <Link
-                      to={!isOrganizer ? `/athletes/${ra.athlete?.id}` : '#'}
-                      className="font-semibold text-navy hover:text-ocean"
-                    >
-                      {ra.athlete?.last_name}, {ra.athlete?.first_name}
-                    </Link>
+                    {!isOrganizer && ra.athlete?.id ? (
+                      <Link
+                        to={`/athletes/${ra.athlete.id}`}
+                        className="font-semibold text-navy hover:text-ocean"
+                      >
+                        {ra.athlete.last_name}, {ra.athlete.first_name}
+                      </Link>
+                    ) : (
+                      <span className="font-semibold text-navy">
+                        {ra.athlete?.last_name}, {ra.athlete?.first_name}
+                      </span>
+                    )}
                     <span className="text-xs text-steel-600">
                       {ra.athlete?.display_id} · {ra.athlete ? sexShort[ra.athlete.sex] : ''} ·{' '}
                       {fmtDate(ra.athlete?.birth_date)}

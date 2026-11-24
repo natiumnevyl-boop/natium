@@ -39,7 +39,15 @@ export const competitionSchema = z
       .or(z.nan()),
     allow_no_time: z.boolean().default(false),
     requirements: z.string().trim().max(2000).optional().or(z.literal('')),
+    cover_image_url: z.string().trim().max(500).optional().or(z.literal('')),
   })
+  .refine(
+    (d) =>
+      !d.cover_image_url ||
+      /^https:\/\//i.test(d.cover_image_url) ||
+      d.cover_image_url.startsWith('http://localhost'),
+    { message: 'Usa una URL https', path: ['cover_image_url'] },
+  )
   .refine((d) => d.end_date >= d.start_date, {
     message: 'Debe ser igual o posterior al inicio',
     path: ['end_date'],
@@ -243,6 +251,7 @@ const toPayload = (v: z.output<typeof competitionSchema>) => ({
   venue: v.venue || null,
   city: v.city || null,
   requirements: v.requirements || null,
+  cover_image_url: v.cover_image_url || null,
   age_reference_date: v.age_reference_date || null,
   max_entries_per_athlete:
     typeof v.max_entries_per_athlete === 'number' && !Number.isNaN(v.max_entries_per_athlete)

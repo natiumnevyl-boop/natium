@@ -1,12 +1,14 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './layouts/AppShell'
 import { AuthLayout } from './layouts/AuthLayout'
+import { PublicLayout } from './layouts/PublicLayout'
 import { RedirectIfAuthed, RequireAuth } from './guards/RequireAuth'
 import { RequireRole } from './guards/RequireRole'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { UpdatePasswordPage } from '@/features/auth/pages/UpdatePasswordPage'
+import { ProfilePage } from '@/features/auth/pages/ProfilePage'
 import { HomeRedirect } from '@/features/dashboard/HomeRedirect'
 import { CoachDashboardPage } from '@/features/dashboard/CoachDashboardPage'
 import { OrganizerDashboardPage } from '@/features/dashboard/OrganizerDashboardPage'
@@ -19,6 +21,7 @@ import { AthletesPage } from '@/features/athletes/pages/AthletesPage'
 import { AthleteDetailPage } from '@/features/athletes/pages/AthleteDetailPage'
 import { OpenCompetitionsPage } from '@/features/competitions/pages/OpenCompetitionsPage'
 import { CompetitionPublicPage } from '@/features/competitions/pages/CompetitionPublicPage'
+import { PublicCompetitionSharePage } from '@/features/competitions/pages/PublicCompetitionSharePage'
 import { OrgCompetitionsPage } from '@/features/competitions/pages/OrgCompetitionsPage'
 import { CompetitionFormPage } from '@/features/competitions/pages/CompetitionFormPage'
 import { OrgCompetitionDetailPage } from '@/features/competitions/pages/OrgCompetitionDetailPage'
@@ -31,6 +34,10 @@ import { OrgRegistrationsPage } from '@/features/registrations/pages/OrgRegistra
 import { NotFoundPage } from '@/shared/ui/StatusPages'
 
 export const router = createBrowserRouter([
+  {
+    element: <PublicLayout />,
+    children: [{ path: '/c/:competitionId', element: <PublicCompetitionSharePage /> }],
+  },
   {
     element: <RedirectIfAuthed />,
     children: [
@@ -55,6 +62,7 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/', element: <HomeRedirect /> },
+          { path: '/account', element: <ProfilePage /> },
           // Coach
           {
             element: <RequireRole roles={['coach', 'platform_admin']} />,

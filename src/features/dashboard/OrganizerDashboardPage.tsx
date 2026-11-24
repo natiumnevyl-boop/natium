@@ -4,23 +4,51 @@ import {
   ClipboardList,
   FileOutput,
   Plus,
+  Share2,
   Trophy,
   UserRound,
   Users,
   Waves,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { Alert, Badge, Button, Card, CardHeader, PageHeader, StatCard } from '@/shared/ui'
+import { ErrorState } from '@/shared/ui/StatusPages'
 import { fmtDateTime } from '@/shared/utils/dates'
 import { registrationStatusLabel, registrationStatusTone } from '@/shared/utils/labels'
-import { useMyOrganization } from '@/features/competitions/api'
+import { useMyOrganization, useOrgCompetitions } from '@/features/competitions/api'
 import { useOrgRegistrations } from '@/features/registrations/api'
+import { supabase } from '@/lib/supabase'
+import { unwrap } from '@/lib/errors'
 import { useOrganizerDashboard } from './api'
 
 export function OrganizerDashboardPage() {
   const org = useMyOrganization()
   const dash = useOrganizerDashboard()
   const pending = useOrgRegistrations(undefined, 'submitted')
+  const comps = useOrgCompetitions()
+  const recentExports = useQuery({
+    queryKey: ['dashboard', 'organizer', 'exports'],
+    enabled: !!org.data,
+    queryFn: async () =>
+      unwrap(
+        await supabase
+          .from('export_jobs')
+          .select('id, status, file_name, created_at, competition_id, format')
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ),
+  })
   const d = dash.data
+  const upcomingClosures =
+    comps.data
+      ?.filter((c) => c.status === 'published')
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.registration_closes_at).getTime() -
+          new Date(b.registration_closes_at).getTime(),
+      )
+      .slice(0, 5) ?? []
 
   return (
     <>
@@ -44,6 +72,14 @@ export function OrganizerDashboardPage() {
             Ir a Organización
           </Link>
         </Alert>
+      )}
+      {dash.isError && (
+        <div className="mb-5">
+          <ErrorState
+            message="No se pudieron cargar los indicadores."
+            onRetry={() => dash.refetch()}
+          />
+        </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -143,19 +179,79 @@ export function OrganizerDashboardPage() {
             )}
           </ul>
         </Card>
-        <Card className="h-fit">
-          <CardHeader title="Estado de exportaciones" />
-          <div className="px-5 py-4 text-sm text-steel-800">
-            <p>
-              El motor de exportación quedará habilitado cuando se analice el archivo de referencia
-              del software del organizador.
-            </p>
-            <p className="mt-2 text-xs text-steel-600">
-              Ver <code className="rounded bg-ice px-1">docs/export-engine.md</code> para la
-              dependencia pendiente.
-            </p>
-          </div>
-        </Card>
+        <div className="flex flex-col gap-5">
+          <Card className="h-fit">
+            <CardHeader title="Próximos cierres" description="Competencias publicadas." />
+            <ul className="divide-y divide-ice-200">
+              {upcomingClosures.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-2 px-5 py-3 text-sm">
+                  <Link
+                    to={`/org/competitions/${c.id}`}
+                    className="min-w-0 truncate font-semibold text-navy hover:text-ocean"
+                  >
+                    {c.name}
+                  </Link>
+                  <span className="tnum shrink-0 text-xs text-steel-600">
+                    {fmtDateTime(c.registration_closes_at)}
+                  </span>
+                </li>
+              ))}
+              {upcomingClosures.length === 0 && (
+                <li className="px-5 py-6 text-center text-sm text-steel-600">
+                  No hay competencias publicadas.
+                </li>
+              )}
+            </ul>
+          </Card>
+          <Card className="h-fit">
+            <CardHeader
+              title="Exportaciones recientes"
+              description="CSV y MDB generados desde tus competencias."
+            />
+            <ul className="divide-y divide-ice-200">
+              {recentExports.data?.map((j) => (
+                <li key={j.id} className="flex items-center justify-between gap-2 px-5 py-3 text-sm">
+                  <div className="min-w-0">
+                    <Link
+                      to={`/org/competitions/${j.competition_id}`}
+                      className="block truncate font-semibold text-navy hover:text-ocean"
+                    >
+                      {j.file_name ?? j.format}
+                    </Link>
+                    <p className="text-xs text-steel-600">{fmtDateTime(j.created_at)}</p>
+                  </div>
+                  <Badge
+                    tone={
+                      j.status === 'completed'
+                        ? 'success'
+                        : j.status === 'failed'
+                          ? 'danger'
+                          : 'warning'
+                    }
+                  >
+                    {j.status}
+                  </Badge>
+                </li>
+              ))}
+              {recentExports.data?.length === 0 && (
+                <li className="px-5 py-6 text-center text-sm text-steel-600">
+                  Aún no hay exportaciones. Ábrelas desde la pestaña Exportar de cada competencia.
+                </li>
+              )}
+            </ul>
+            {comps.data?.[0] && (
+              <div className="border-t border-ice-200 px-5 py-3">
+                <Link
+                  to={`/org/competitions/${comps.data[0].id}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-ocean hover:underline"
+                >
+                  <Share2 className="size-3.5" />
+                  Abrir competencia y compartir convocatoria
+                </Link>
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
     </>
   )

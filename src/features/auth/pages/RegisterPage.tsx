@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Alert, Button, Field, Input } from '@/shared/ui'
 import { cn } from '@/shared/utils/cn'
 import { registerSchema, type RegisterInput } from '../schemas'
 
+function safeInternalPath(value: string | null | undefined) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return null
+  return value
+}
+
 export function RegisterPage() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const from = safeInternalPath(params.get('from')) ?? '/'
   const [error, setError] = useState<string | null>(null)
   const [needsConfirm, setNeedsConfirm] = useState(false)
   const { register, handleSubmit, formState, watch, setValue } = useForm<RegisterInput>({
@@ -32,9 +39,10 @@ export function RegisterPage() {
       )
       return
     }
-    if (data.session) navigate('/', { replace: true })
+    if (data.session) navigate(from, { replace: true })
     else setNeedsConfirm(true)
   })
+
 
   if (needsConfirm) {
     return (
@@ -105,7 +113,10 @@ export function RegisterPage() {
       </form>
       <p className="mt-6 text-center text-sm text-steel-600">
         ¿Ya tienes cuenta?{' '}
-        <Link to="/login" className="font-semibold text-ocean hover:underline">
+        <Link
+          to={from !== '/' ? `/login?from=${encodeURIComponent(from)}` : '/login'}
+          className="font-semibold text-ocean hover:underline"
+        >
           Iniciar sesión
         </Link>
       </p>

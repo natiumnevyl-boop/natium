@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Trophy } from 'lucide-react'
 import { Alert, Button, Card, CardSkeleton, EmptyState, PageHeader } from '@/shared/ui'
+import { ErrorState } from '@/shared/ui/StatusPages'
+import { toAppError } from '@/lib/errors'
 import { useMyOrganization, useOrgCompetitions } from '../api'
 import { CompetitionCard } from '../components/CompetitionCard'
 
@@ -42,6 +44,11 @@ export function OrgCompetitionsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <CardSkeleton />
           <CardSkeleton />
+        </div>
+      )}
+      {comps.isError && (
+        <div className="mb-4">
+          <ErrorState message={toAppError(comps.error).message} onRetry={() => comps.refetch()} />
         </div>
       )}
       {comps.data?.length === 0 && (
