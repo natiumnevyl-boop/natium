@@ -29,16 +29,14 @@ export function AuthLayout() {
       </aside>
       <main className="relative flex items-center justify-center px-4 py-10 sm:px-8">
         <div className="absolute inset-0 lg:hidden">
-          <div className="h-40 bg-navy">
-            <div className="relative h-full overflow-hidden">
-              <WaveBackground />
+          <div className="relative h-36 overflow-hidden bg-navy sm:h-40">
+            <WaveBackground />
+            <div className="relative px-4 pt-6 sm:px-8">
+              <Logo variant="light" />
             </div>
           </div>
         </div>
-        <div className="relative w-full max-w-md animate-rise">
-          <div className="mb-6 lg:hidden">
-            <Logo variant="light" />
-          </div>
+        <div className="relative w-full max-w-md animate-rise pt-24 lg:pt-0">
           <Outlet />
         </div>
       </main>
