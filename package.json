@@ -18,7 +18,9 @@
     "db:status": "supabase status",
     "db:types": "supabase gen types typescript --local > src/lib/database.types.ts",
     "db:diff": "supabase db diff",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "mdb:package": "mvn -f tools/mdb-exporter/pom.xml -q package",
+    "mdb:write": "java -jar tools/mdb-exporter/target/mdb-exporter-1.0.0.jar write"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.8",

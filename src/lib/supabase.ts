@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from './database.types'
+import type { Database, Json } from './database.types'
+export type { Json }
 import { env } from '@/config/env'
 
 if (!env) {

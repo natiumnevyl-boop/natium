@@ -596,10 +596,13 @@ export type Database = {
           created_at: string
           error_report: NonNullable<Json>
           export_profile_id: string | null
+          file_name: string | null
           file_path: string | null
+          format: string
           id: string
           requested_by: string
           status: Database['public']['Enums']['export_status']
+          summary: NonNullable<Json>
           team_id: string | null
           version: number
         }
@@ -610,10 +613,13 @@ export type Database = {
           created_at?: string
           error_report?: NonNullable<Json>
           export_profile_id?: string | null
+          file_name?: string | null
           file_path?: string | null
+          format?: string
           id?: string
           requested_by: string
           status?: Database['public']['Enums']['export_status']
+          summary?: NonNullable<Json>
           team_id?: string | null
           version?: number
         }
@@ -623,10 +629,13 @@ export type Database = {
           created_at?: string
           error_report?: NonNullable<Json>
           export_profile_id?: string | null
+          file_name?: string | null
           file_path?: string | null
+          format?: string
           id?: string
           requested_by?: string
           status?: Database['public']['Enums']['export_status']
+          summary?: NonNullable<Json>
           team_id?: string | null
           version?: number
         }
@@ -1228,6 +1237,60 @@ export type Database = {
           similarity: number
         }[]
       }
+      complete_export_job: {
+        Args: { p_file_name?: string; p_file_path: string; p_job_id: string }
+        Returns: {
+          competition_id: string
+          completed_at: string | null
+          created_at: string
+          error_report: NonNullable<Json>
+          export_profile_id: string | null
+          file_name: string | null
+          file_path: string | null
+          format: string
+          id: string
+          requested_by: string
+          status: Database['public']['Enums']['export_status']
+          summary: NonNullable<Json>
+          team_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'export_jobs'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fail_export_job: {
+        Args: { p_errors?: Json; p_job_id: string }
+        Returns: {
+          competition_id: string
+          completed_at: string | null
+          created_at: string
+          error_report: NonNullable<Json>
+          export_profile_id: string | null
+          file_name: string | null
+          file_path: string | null
+          format: string
+          id: string
+          requested_by: string
+          status: Database['public']['Enums']['export_status']
+          summary: NonNullable<Json>
+          team_id: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'export_jobs'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_competition_export_snapshot: {
+        Args: { p_competition_id: string; p_team_id?: string | null }
+        Returns: Json
+      }
       get_or_create_registration: {
         Args: { p_competition_id: string; p_team_id: string }
         Returns: {
@@ -1249,6 +1312,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      prepare_export_job: {
+        Args: { p_competition_id: string; p_format: string; p_team_id?: string | null }
+        Returns: Json
       }
       is_competition_organizer: { Args: { p_competition_id: string }; Returns: boolean }
       is_org_member: { Args: { p_org_id: string }; Returns: boolean }

@@ -14,3 +14,10 @@ coverage
 supabase/.branches
 supabase/.temp
 supabase/.env
+
+# Local Meet Manager reference dumps may contain personal data
+reference/**
+!reference/README.md
+
+# Java build output
+tools/mdb-exporter/target/

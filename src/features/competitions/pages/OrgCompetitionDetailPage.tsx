@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
@@ -18,7 +18,9 @@ import {
   Input,
   Modal,
   PageHeader,
+  SearchInput,
   Select,
+  StatCard,
   Tabs,
   type Column,
 } from '@/shared/ui'
@@ -36,6 +38,7 @@ import {
 } from '@/shared/utils/labels'
 import { useEventCatalog } from '@/features/catalog/api'
 import { useOrgRegistrations, type RegistrationListItem } from '@/features/registrations/api'
+import { ExportPanel } from '@/features/exports/components/ExportPanel'
 import type { Enums } from '@/lib/supabase'
 import {
   categorySchema,
@@ -51,7 +54,7 @@ import {
   type CategoryInput,
 } from '../api'
 
-type Tab = 'general' | 'categories' | 'events' | 'registrations'
+type Tab = 'general' | 'categories' | 'events' | 'registrations' | 'export'
 
 export function OrgCompetitionDetailPage() {
   const { competitionId = '' } = useParams()
@@ -135,6 +138,7 @@ export function OrgCompetitionDetailPage() {
           { key: 'categories', label: 'Categorías', count: cats.data?.length },
           { key: 'events', label: 'Pruebas', count: activeEvents },
           { key: 'registrations', label: 'Inscripciones', count: regs.data?.length },
+          { key: 'export', label: 'Exportar inscripciones' },
         ]}
       />
 
@@ -176,6 +180,18 @@ export function OrgCompetitionDetailPage() {
       )}
       {tab === 'events' && <EventsTab competitionId={c.id} locked={c.status === 'finished'} />}
       {tab === 'registrations' && <RegistrationsTab rows={regs.data} loading={regs.isLoading} />}
+      {tab === 'export' && (
+        <ExportPanel
+          competitionId={c.id}
+          teams={[
+            ...new Map(
+              (regs.data ?? [])
+                .filter((r) => r.team)
+                .map((r) => [r.team!.id, { id: r.team!.id, name: r.team!.name }] as const),
+            ).values(),
+          ]}
+        />
+      )}
 
       <ConfirmDialog
         open={!!statusTarget}
@@ -574,6 +590,39 @@ function RegistrationsTab({
   loading: boolean
 }) {
   const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState<Enums<'registration_status'> | ''>('')
+
+  const stats = useMemo(() => {
+    const list = rows ?? []
+    return {
+      teams: new Set(list.map((r) => r.team_id)).size,
+      athletes: list.reduce((n, r) => n + r.athletes_count, 0),
+      entries: list.reduce((n, r) => n + r.entries_count, 0),
+      pending: list.filter((r) => r.status === 'submitted' || r.status === 'in_review').length,
+      accepted: list.filter((r) => r.status === 'accepted' || r.status === 'exported').length,
+      rejected: list.filter((r) => r.status === 'rejected').length,
+      corrections: list.filter((r) => r.status === 'needs_correction').length,
+      updatedAt: list.reduce<string | null>((latest, r) => {
+        if (!latest || r.updated_at > latest) return r.updated_at
+        return latest
+      }, null),
+    }
+  }, [rows])
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return (rows ?? []).filter((r) => {
+      if (status && r.status !== status) return false
+      if (!q) return true
+      return (
+        r.team?.name?.toLowerCase().includes(q) ||
+        r.folio?.toLowerCase().includes(q) ||
+        r.team?.short_name?.toLowerCase().includes(q)
+      )
+    })
+  }, [rows, query, status])
+
   const columns: Column<RegistrationListItem>[] = [
     {
       key: 'team',
@@ -606,6 +655,12 @@ function RegistrationsTab({
       cell: (r) => fmtDateTime(r.submitted_at),
     },
     {
+      key: 'updated',
+      header: 'Actualización',
+      hideOnMobile: true,
+      cell: (r) => fmtDateTime(r.updated_at),
+    },
+    {
       key: 'status',
       header: 'Estado',
       align: 'right',
@@ -615,10 +670,46 @@ function RegistrationsTab({
     },
   ]
   return (
-    <>
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Equipos" value={stats.teams} loading={loading} />
+        <StatCard label="Atletas inscritos" value={stats.athletes} loading={loading} />
+        <StatCard label="Pruebas inscritas" value={stats.entries} loading={loading} tone="aqua" />
+        <StatCard label="Pendientes" value={stats.pending} loading={loading} tone="warning" />
+        <StatCard label="Aceptadas" value={stats.accepted} loading={loading} />
+        <StatCard label="Rechazadas" value={stats.rejected} loading={loading} />
+        <StatCard label="Con observaciones" value={stats.corrections} loading={loading} tone="warning" />
+        <StatCard
+          label="Última actualización"
+          value={stats.updatedAt ? fmtDateTime(stats.updatedAt) : '—'}
+          loading={loading}
+        />
+      </div>
+      <div className="grid gap-2 sm:grid-cols-[1fr_220px]">
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Buscar equipo o folio…"
+          aria-label="Buscar inscripciones"
+        />
+        <Select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as typeof status)}
+          aria-label="Filtrar por estado"
+        >
+          <option value="">Todos los estados</option>
+          {(Object.keys(registrationStatusLabel) as Enums<'registration_status'>[])
+            .filter((s) => s !== 'draft')
+            .map((s) => (
+              <option key={s} value={s}>
+                {registrationStatusLabel[s]}
+              </option>
+            ))}
+        </Select>
+      </div>
       <DataTable
         columns={columns}
-        rows={rows}
+        rows={filtered}
         rowKey={(r) => r.id}
         loading={loading}
         onRowClick={(r) => navigate(`/registrations/${r.id}`)}
@@ -629,13 +720,6 @@ function RegistrationsTab({
           </div>
         }
       />
-      <p className="mt-3 text-xs text-steel-600">
-        La exportación al software del organizador se habilitará cuando se analice el archivo de
-        referencia.{' '}
-        <Link to="/org/registrations" className="font-semibold text-ocean hover:underline">
-          Ver todas las inscripciones
-        </Link>
-      </p>
-    </>
+    </div>
   )
 }
